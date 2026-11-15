@@ -93,13 +93,17 @@ class CheckoutController extends Controller
 
         // Chống IDOR: Chỉ cho phép xem đơn hàng vừa đặt trong phiên hiện tại hoặc của chính user đang đăng nhập
         $successOrder = null;
-        if ($orderId = $request->integer('success_order_id')) {
-            $candidateOrder = Order::query()
-                ->with(['items.product:id,sku,name,slug,images'])
-                ->find($orderId);
+        $paymentData = null;
+        $orderIdentifier = $request->query('order_code') ?: $request->query('success_order_id');
+        if (!empty($orderIdentifier)) {
+            $candidateOrder = OrderController::findOrderByCodeOrId((string) $orderIdentifier);
+            if ($candidateOrder) {
+                $candidateOrder->load(['items.product:id,sku,name,slug,images', 'payment']);
+            }
 
             if ($candidateOrder && $this->canAccessOrder($candidateOrder)) {
-                $successOrder = $candidateOrder;
+                $paymentData = app(\App\Services\PaymentService::class)->getOrderPaymentPayload($candidateOrder);
+                $successOrder = $candidateOrder->fresh(['items.product:id,sku,name,slug,images', 'payment']);
             }
         }
 
@@ -107,6 +111,7 @@ class CheckoutController extends Controller
             'cart' => $cart,
             'activeCoupons' => $activeCoupons,
             'successOrder' => $successOrder,
+            'paymentData' => $paymentData,
             'savedAddresses' => $savedAddresses,
             'defaultAddress' => $defaultAddress,
         ]));
@@ -216,10 +221,10 @@ class CheckoutController extends Controller
         session()->put('last_customer_phone', $order->phone);
 
         if ($order->isQrPayment()) {
-            return redirect()->route('checkout.index', ['success_order_id' => $order->id])
+            return redirect()->route('checkout.index', ['success_order_id' => $order->id, 'order_code' => $order->order_code])
                 ->with(
                     'warning',
-                    "Đơn hàng #ORDER-{$order->id} chưa thanh toán thành công. Vui lòng quét mã QR và xác thực đã chuyển khoản thành công để hệ thống xác nhận đã thanh toán cho đơn hàng."
+                    "Đơn hàng {$order->order_code} (#ORDER-{$order->id}) đang ở trạng thái Chờ thanh toán (PENDING_PAYMENT). Vui lòng quét mã QR VietQR để hệ thống SePay tự động xác nhận thanh toán."
                 );
         }
 

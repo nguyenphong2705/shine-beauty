@@ -14,6 +14,8 @@
                 <img src="{{ $product->first_image }}"
                      onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?auto=format&fit=crop&w=900&q=80';"
                      alt="{{ $product->name }}"
+                     loading="lazy"
+                     decoding="async"
                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
             </a>
 

@@ -70,7 +70,7 @@
             </a>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
             @foreach($categories as $cat)
                 <a href="{{ route('products.index', ['category' => $cat->slug]) }}" class="group relative h-72 rounded-3xl overflow-hidden shadow-sm border border-sage-100">
                     <img src="{{ $cat->image }}" alt="{{ $cat->name }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
@@ -80,6 +80,15 @@
                     </div>
                 </a>
             @endforeach
+
+            <a href="{{ route('blog.index') }}" class="group relative h-72 rounded-3xl overflow-hidden shadow-sm border border-sage-100">
+                <img src="https://images.unsplash.com/photo-1617897903246-719242758050?auto=format&fit=crop&w=900&q=80" alt="Blog Mỹ Phẩm & Chăm Sóc Da" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onerror="this.onerror=null;this.src='{{ \App\Http\Controllers\BlogController::FALLBACK_BLOG_IMAGE }}';">
+                <div class="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-900/30 to-transparent flex flex-col justify-end p-6">
+                    <span class="inline-block w-fit bg-sage-500 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full mb-1.5">Cẩm Nang</span>
+                    <h3 class="font-serif text-2xl font-bold text-white group-hover:text-sage-200 transition">Blog Chăm Sóc Da</h3>
+                    <span class="text-xs font-medium text-sage-200 mt-1">Kiến thức mỹ phẩm &amp; da liễu →</span>
+                </div>
+            </a>
         </div>
     </section>
 
@@ -219,6 +228,53 @@
                     </a>
                 @endforeach
             </div>
+        </div>
+    </section>
+
+    <!-- 6. BLOG MỸ PHẨM & CHĂM SÓC DA -->
+    @php
+        $homeBlogPosts = array_slice(\App\Http\Controllers\BlogController::getAllPosts(), 0, 3);
+    @endphp
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-10">
+            <div>
+                <span class="text-xs font-bold uppercase tracking-[0.2em] text-sage-500">Góc Chia Sẻ Chuyên Gia</span>
+                <h2 class="font-serif text-3xl font-bold text-stone-800 mt-1">Blog Mỹ Phẩm &amp; Chăm Sóc Da</h2>
+            </div>
+            <a href="{{ route('blog.index') }}" class="text-sm font-semibold text-sage-600 hover:text-sage-700 mt-2 sm:mt-0">
+                Xem tất cả bài viết Blog →
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-7">
+            @foreach($homeBlogPosts as $bPost)
+                <article class="bg-white rounded-3xl border border-sage-100 overflow-hidden shadow-xs hover:shadow-lg transition flex flex-col justify-between group">
+                    <div>
+                        <a href="{{ route('blog.show', $bPost['slug']) }}" class="block relative h-52 overflow-hidden bg-sage-50">
+                            <img src="{{ $bPost['image'] }}" alt="{{ $bPost['title'] }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null;this.src='{{ \App\Http\Controllers\BlogController::FALLBACK_BLOG_IMAGE }}';">
+                            <span class="absolute top-3 left-3 bg-white/95 text-sage-700 border border-sage-200 text-[11px] font-bold px-3 py-1 rounded-full">
+                                {{ $bPost['category'] }}
+                            </span>
+                        </a>
+                        <div class="p-6 space-y-2.5">
+                            <div class="flex items-center justify-between text-[11px] text-stone-400">
+                                <span>📅 {{ $bPost['published_at'] }}</span>
+                                <span>⏱ {{ $bPost['read_time'] }}</span>
+                            </div>
+                            <h3 class="font-serif text-lg font-bold text-stone-800 group-hover:text-sage-600 transition line-clamp-2">
+                                <a href="{{ route('blog.show', $bPost['slug']) }}">{{ $bPost['title'] }}</a>
+                            </h3>
+                            <p class="text-xs text-stone-500 line-clamp-3 leading-relaxed">
+                                {{ $bPost['excerpt'] }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 border-t border-sage-100 bg-[#F5FAF7]/50 flex items-center justify-between text-xs">
+                        <span class="font-semibold text-stone-700">{{ $bPost['author'] }}</span>
+                        <a href="{{ route('blog.show', $bPost['slug']) }}" class="font-bold text-sage-600 hover:text-sage-700">Đọc tiếp →</a>
+                    </div>
+                </article>
+            @endforeach
         </div>
     </section>
 </div>

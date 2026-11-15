@@ -188,6 +188,13 @@
                         </span>
                         <span class="text-[10px] {{ $activePage === 'coupons' ? 'bg-white/20 text-white' : 'bg-stone-800 text-sage-300' }} px-2 py-0.5 rounded-full">{{ $coupons->count() }}</span>
                     </a>
+                    <a href="{{ route('admin.payments.index') }}" class="flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition {{ $activePage === 'payments' ? 'bg-sage-500 text-white shadow-xs' : 'text-stone-300 hover:bg-stone-800 hover:text-white' }}">
+                        <span class="flex items-center gap-2.5">
+                            <span>🏦</span>
+                            <span>5. Giao Dịch & Đối Soát SePay</span>
+                        </span>
+                        <span class="text-[10px] {{ $activePage === 'payments' ? 'bg-white/20 text-white' : 'bg-stone-800 text-sage-300' }} px-2 py-0.5 rounded-full">{{ isset($paymentTransactions) ? $paymentTransactions->count() : 0 }}</span>
+                    </a>
                 </nav>
             </div>
 
@@ -1020,6 +1027,214 @@
                         </div>
                     @endforeach
                 </div>
+            </div>
+        </section>
+        @endif
+
+        @if($activePage === 'payments')
+        <!-- =================================================================
+             5. QUẢN LÝ GIAO DỊCH NGÂN HÀNG & ĐỐI SOÁT SEPAY WEBHOOK
+             ================================================================= -->
+        @php
+            $txList = $paymentTransactions ?? collect();
+            $matchedCount = $txList->whereIn('status', ['MATCHED_PAID', 'MANUAL_RECONCILED'])->count();
+            $unreconciledCount = $txList->filter(fn($t) => $t->needsReconciliation())->count();
+            $totalReceivedAmount = $txList->where('transfer_type', 'in')->sum('amount');
+        @endphp
+        <section class="space-y-6">
+            <div class="bg-white rounded-3xl border border-stone-200 p-6 shadow-xs space-y-5">
+                <div class="flex flex-wrap items-center justify-between gap-4 border-b border-stone-100 pb-4">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-widest text-sage-600">Cổng Thanh Toán Tự Động SePay × VietQR</span>
+                        <h1 class="text-2xl font-bold text-stone-800 mt-0.5">
+                            Quản Lý Giao Dịch Ngân Hàng &amp; Đối Soát Thanh Toán
+                        </h1>
+                        <p class="text-xs text-stone-500 mt-1">
+                            Theo dõi toàn bộ biến động số dư từ SePay Webhook, kiểm tra chi tiết JSON payload, lịch sử thay đổi trạng thái và xử lý các giao dịch chưa đối soát.
+                        </p>
+                    </div>
+                    <div class="text-right text-xs bg-sage-50 border border-sage-200 rounded-2xl px-4 py-2.5">
+                        <span class="text-stone-500 block">Webhook Endpoint:</span>
+                        <code class="font-mono font-bold text-sage-700">POST {{ url('/api/webhooks/sepay') }}</code>
+                    </div>
+                </div>
+
+                <!-- Thống kê nhanh giao dịch -->
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div class="p-4 rounded-2xl bg-stone-50 border border-stone-200">
+                        <span class="text-xs text-stone-500">Tổng giao dịch Webhook</span>
+                        <p class="text-2xl font-bold text-stone-800 mt-1">{{ $txList->count() }}</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
+                        <span class="text-xs text-emerald-700 font-semibold">Đã khớp &amp; Xác nhận PAID</span>
+                        <p class="text-2xl font-bold text-emerald-700 mt-1">{{ $matchedCount }}</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200">
+                        <span class="text-xs text-amber-800 font-semibold">Cần kiểm tra / Đối soát</span>
+                        <p class="text-2xl font-bold text-amber-700 mt-1">{{ $unreconciledCount }}</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-blue-50 border border-blue-200">
+                        <span class="text-xs text-blue-700 font-semibold">Tổng tiền vào ghi nhận</span>
+                        <p class="text-2xl font-bold text-blue-700 mt-1">{{ number_format($totalReceivedAmount, 0, ',', '.') }}₫</p>
+                    </div>
+                </div>
+
+                @if($txList->isEmpty())
+                    <div class="p-10 text-center rounded-2xl bg-stone-50 border border-stone-200 text-xs text-stone-500">
+                        Chưa có giao dịch Webhook nào được ghi nhận trong bảng <code>payment_transactions</code>.
+                    </div>
+                @else
+                    <div class="space-y-4">
+                        @foreach($txList as $tx)
+                            @php
+                                $txOrder = $tx->order;
+                                $txPayment = $tx->payment;
+                                $isPaidTx = in_array($tx->status, ['MATCHED_PAID', 'MANUAL_RECONCILED'], true);
+                                $needsRec = $tx->needsReconciliation();
+                            @endphp
+                            <div class="rounded-2xl border {{ $isPaidTx ? 'border-emerald-200 bg-emerald-50/20' : ($needsRec ? 'border-amber-300 bg-amber-50/30' : 'border-stone-200 bg-white') }} p-5 space-y-4">
+                                <div class="flex flex-wrap items-start justify-between gap-4">
+                                    <div class="space-y-1">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <span class="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-stone-900 text-white">
+                                                GD #{{ $tx->provider_transaction_id }}
+                                            </span>
+                                            @if($tx->reference_code)
+                                                <span class="font-mono text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200">
+                                                    Ref: {{ $tx->reference_code }}
+                                                </span>
+                                            @endif
+                                            <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-stone-100 text-stone-700">
+                                                🏦 {{ $tx->gateway ?: 'Ngân hàng' }} ({{ $tx->account_number ?: 'N/A' }})
+                                            </span>
+                                            <span class="text-xs font-bold px-3 py-1 rounded-full {{ $isPaidTx ? 'bg-emerald-600 text-white' : ($needsRec ? 'bg-amber-500 text-white' : 'bg-stone-200 text-stone-700') }}">
+                                                {{ $tx->status_label }}
+                                            </span>
+                                        </div>
+                                        <p class="text-xs text-stone-600 pt-1">
+                                            <strong>Nội dung CK:</strong> <code class="font-mono bg-white px-2 py-0.5 rounded border border-stone-200">{{ $tx->transfer_content ?: '(Trống)' }}</code>
+                                            • <strong>Thời gian nhận:</strong> {{ $tx->transaction_date?->format('d/m/Y H:i:s') ?? $tx->created_at?->format('d/m/Y H:i:s') }}
+                                        </p>
+                                    </div>
+
+                                    <div class="text-right">
+                                        <span class="text-[11px] text-stone-400 block">Số tiền thực nhận</span>
+                                        <strong class="text-lg font-bold {{ $tx->transfer_type === 'in' ? 'text-emerald-700' : 'text-stone-600' }}">
+                                            {{ $tx->transfer_type === 'in' ? '+' : '-' }}{{ number_format($tx->amount, 0, ',', '.') }}₫
+                                        </strong>
+                                    </div>
+                                </div>
+
+                                <!-- Thông tin đơn hàng & khách hàng liên kết -->
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs bg-white p-3.5 rounded-xl border border-stone-200">
+                                    <div>
+                                        <span class="text-stone-400 block">Mã đơn hàng đối chiếu:</span>
+                                        @if($txOrder)
+                                            <strong class="font-mono text-stone-900">{{ $txOrder->order_code }} (#ORDER-{{ $txOrder->id }})</strong>
+                                            <span class="block text-[11px] text-stone-500">Cần thu: {{ number_format($txOrder->total_amount, 0, ',', '.') }}₫</span>
+                                        @else
+                                            <strong class="text-amber-700">Chưa gắn đơn hàng</strong>
+                                        @endif
+                                    </div>
+                                    <div>
+                                        <span class="text-stone-400 block">Khách hàng:</span>
+                                        @if($txOrder)
+                                            <strong class="text-stone-800">{{ $txOrder->customer_name }}</strong>
+                                            <span class="block text-[11px] text-stone-500">SĐT: {{ $txOrder->phone }}</span>
+                                        @else
+                                            <span class="text-stone-400">—</span>
+                                        @endif
+                                    </div>
+                                    <div>
+                                        <span class="text-stone-400 block">Thông tin đối soát:</span>
+                                        @if($tx->reconciled_by && $tx->reconciler)
+                                            <strong class="text-emerald-700">Admin: {{ $tx->reconciler->name }}</strong>
+                                            <span class="block text-[11px] text-stone-500">Lý do: {{ $tx->reconciliation_note }} ({{ $tx->reconciled_at?->format('d/m/Y H:i') }})</span>
+                                        @elseif($isPaidTx)
+                                            <strong class="text-emerald-700">Tự động qua SePay Webhook</strong>
+                                        @else
+                                            <strong class="text-amber-700">Đang chờ Admin kiểm tra</strong>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                <!-- Form Đối Soát Thủ Công dành cho các giao dịch chưa khớp / thiếu tiền / thừa tiền / đến muộn -->
+                                @if($needsRec && (!$txOrder || !$txOrder->isPaid()))
+                                    <form action="{{ route('admin.payments.reconcile', $tx) }}" method="POST" class="bg-amber-50/90 border border-amber-300 rounded-xl p-4 space-y-3 text-xs">
+                                        @csrf
+                                        <p class="font-bold text-amber-900">
+                                            🛠️ Xác Nhận &amp; Đối Soát Thủ Công Giao Dịch (Ghi nhận Admin thực hiện &amp; lý do)
+                                        </p>
+                                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                                            <div class="md:col-span-4">
+                                                <label class="block text-[11px] font-bold text-stone-700 mb-1">Chọn đơn hàng cần xác nhận PAID *</label>
+                                                <select name="order_id" required class="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white text-xs font-semibold">
+                                                    @if($txOrder && !$txOrder->isPaid())
+                                                        <option value="{{ $txOrder->id }}" selected>
+                                                            {{ $txOrder->order_code }} — {{ $txOrder->customer_name }} ({{ number_format($txOrder->total_amount, 0, ',', '.') }}₫)
+                                                        </option>
+                                                    @else
+                                                        <option value="">-- Chọn đơn hàng chưa thanh toán --</option>
+                                                    @endif
+                                                    @foreach(($unpaidQrOrders ?? collect()) as $uOrd)
+                                                        @if(!$txOrder || $uOrd->id !== $txOrder->id)
+                                                            <option value="{{ $uOrd->id }}">
+                                                                {{ $uOrd->order_code }} (#ORDER-{{ $uOrd->id }}) — {{ $uOrd->customer_name }} — {{ number_format($uOrd->total_amount, 0, ',', '.') }}₫
+                                                            </option>
+                                                        @endif
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="md:col-span-5">
+                                                <label class="block text-[11px] font-bold text-stone-700 mb-1">Lý do xác nhận thủ công (Bắt buộc) *</label>
+                                                <input type="text" name="reason" required minlength="5"
+                                                       placeholder="VD: Khách ghi nhầm nội dung CK, đã kiểm tra sao kê VCB khớp số tiền..."
+                                                       class="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white text-xs">
+                                            </div>
+                                            <div class="md:col-span-3">
+                                                <button type="submit" class="w-full py-2 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition cursor-pointer">
+                                                    ✓ Xác Nhận Đối Soát
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                @endif
+
+                                <!-- Chi tiết Payload JSON & Lịch sử thay đổi trạng thái -->
+                                <details class="text-xs bg-stone-50 rounded-xl border border-stone-200 px-4 py-2.5">
+                                    <summary class="font-semibold text-stone-700 cursor-pointer">
+                                        Xem chi tiết Raw Payload (JSONB) &amp; Lịch sử trạng thái thanh toán
+                                    </summary>
+                                    <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <span class="text-[11px] font-bold text-stone-500 uppercase block mb-1">Raw Webhook Payload:</span>
+                                            <pre class="bg-stone-900 text-emerald-300 p-3 rounded-xl overflow-x-auto text-[11px] font-mono">{{ json_encode($tx->raw_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                                        </div>
+                                        <div>
+                                            <span class="text-[11px] font-bold text-stone-500 uppercase block mb-1">Lịch sử thay đổi trạng thái (Status History):</span>
+                                            @if($txPayment && !empty($txPayment->status_history))
+                                                <div class="space-y-1.5">
+                                                    @foreach($txPayment->status_history as $hItem)
+                                                        <div class="bg-white p-2.5 rounded-lg border border-stone-200 text-[11px]">
+                                                            <div class="flex justify-between font-bold text-stone-800">
+                                                                <span>{{ $hItem['from_status'] ?? '' }} → {{ $hItem['to_status'] ?? '' }}</span>
+                                                                <span class="text-stone-400">{{ $hItem['changed_at'] ?? '' }}</span>
+                                                            </div>
+                                                            <p class="text-stone-600 mt-0.5">{{ $hItem['reason'] ?? '' }}</p>
+                                                            <span class="text-[10px] text-sage-700 font-semibold">Thực hiện bởi: {{ $hItem['actor_name'] ?? 'System' }}</span>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @else
+                                                <p class="text-stone-400 italic">Chưa có lịch sử trạng thái đơn hàng.</p>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </details>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
             </div>
         </section>
         @endif

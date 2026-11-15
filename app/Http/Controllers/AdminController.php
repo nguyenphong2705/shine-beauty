@@ -6,14 +6,19 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Coupon;
 use App\Models\Order;
+use App\Models\Payment;
+use App\Models\PaymentTransaction;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\PaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use InvalidArgumentException;
 
 /**
  * Class AdminController
@@ -106,6 +111,50 @@ class AdminController extends Controller
     public function coupons(Request $request)
     {
         return $this->renderAdminPage($request, 'coupons');
+    }
+
+    /**
+     * Hiển thị tab Quản lý Giao dịch Ngân hàng & Đối soát SePay Webhook.
+     */
+    public function payments(Request $request)
+    {
+        return $this->renderAdminPage($request, 'payments');
+    }
+
+    /**
+     * Xử lý đối soát & xác nhận thanh toán thủ công cho giao dịch chưa khớp / lệch tiền / hết hạn.
+     * Bắt buộc lưu lại Admin thực hiện và lý do xác nhận.
+     */
+    public function reconcilePaymentTransaction(Request $request, PaymentTransaction $transaction, PaymentService $paymentService): RedirectResponse
+    {
+        if ($redirect = $this->authorizeShopOwner()) {
+            return $redirect;
+        }
+
+        $validated = $request->validate([
+            'order_id' => ['required', 'integer', 'exists:orders,id'],
+            'reason' => ['required', 'string', 'min:5', 'max:500'],
+        ], [
+            'order_id.required' => 'Vui lòng chọn đơn hàng cần đối soát.',
+            'reason.required' => 'Bắt buộc nhập lý do xác nhận đối soát thủ công.',
+            'reason.min' => 'Lý do đối soát phải có ít nhất 5 ký tự.',
+        ]);
+
+        /** @var Order $order */
+        $order = Order::query()->findOrFail((int) $validated['order_id']);
+        /** @var User $admin */
+        $admin = Auth::user();
+
+        try {
+            $paymentService->reconcileTransactionManually($transaction, $order, $admin, (string) $validated['reason']);
+        } catch (InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with(
+            'success',
+            "Đã đối soát thủ công giao dịch #{$transaction->provider_transaction_id} cho đơn hàng {$order->order_code} (Người thực hiện: {$admin->name})."
+        );
     }
 
     /**
@@ -246,6 +295,19 @@ class AdminController extends Controller
         $orders = $filteredOrders->values();
         $products = $filteredProducts->values();
 
+        $paymentTransactions = collect();
+        $unpaidQrOrders = collect();
+        if (Schema::hasTable('payment_transactions')) {
+            $paymentTransactions = PaymentTransaction::with(['order', 'payment', 'reconciler'])
+                ->latest('id')
+                ->get();
+            $unpaidQrOrders = Order::query()
+                ->whereIn('payment_method', ['BANK_TRANSFER', 'MOMO_QR'])
+                ->where('payment_status', '!=', 'PAID')
+                ->latest('id')
+                ->get();
+        }
+
         $stats = [
             'total_products' => $allProducts->count(),
             'total_orders' => $totalOrdersCount,
@@ -287,6 +349,8 @@ class AdminController extends Controller
             'productSearch',
             'stockFilter',
             'categoryFilter',
+            'paymentTransactions',
+            'unpaidQrOrders',
             'stats'
         ));
     }

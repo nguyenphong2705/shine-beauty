@@ -35,4 +35,19 @@ return [
         ],
     ],
 
+    'vietqr' => [
+        'bank_id' => env('BANK_ID', 'VCB'),
+        'bank_name' => env('BANK_NAME', 'Vietcombank (VCB) - CN TP.HCM'),
+        'bank_account' => env('BANK_ACCOUNT', '1029384756'),
+        'bank_account_name' => env('BANK_ACCOUNT_NAME', 'SHINE BEAUTY COSMETICS'),
+        'qr_template' => env('QR_TEMPLATE', 'compact2'),
+        'payment_timeout_minutes' => (int) env('PAYMENT_TIMEOUT_MINUTES', 15),
+    ],
+
+    'sepay' => [
+        'webhook_token' => env('SEPAY_WEBHOOK_TOKEN', 'sepay_secret_webhook_token_2026'),
+        'api_token' => env('SEPAY_API_TOKEN', ''),
+        'match_prefix' => env('SEPAY_MATCH_PREFIX', 'DH'),
+    ],
+
 ];

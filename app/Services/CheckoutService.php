@@ -245,7 +245,7 @@ class CheckoutService
 
         $summary = $this->calculateCartSummary($cart, $appliedCouponSession, $shippingMode, $province, $district);
 
-        return DB::transaction(function () use ($validatedData, $cart, $summary, $userId): Order {
+        return DB::transaction(function () use ($validatedData, $cart, $appliedCouponSession, $shippingMode, $province, $district, $userId): Order {
             $productIds = collect($cart)->pluck('id')->map(static fn ($id): int => (int) $id)->unique()->values()->all();
 
             $products = Product::query()
@@ -256,10 +256,11 @@ class CheckoutService
 
             $now = now();
             $orderItemsPayload = [];
+            $dbVerifiedCart = [];
 
             foreach ($cart as $item) {
                 $productId = (int) $item['id'];
-                $quantity = (int) $item['quantity'];
+                $quantity = max(1, (int) $item['quantity']);
                 /** @var Product|null $product */
                 $product = $products->get($productId);
 
@@ -268,16 +269,26 @@ class CheckoutService
                     throw new RuntimeException("Sản phẩm \"{$productName}\" không đủ số lượng tồn kho.");
                 }
 
+                $dbUnitPrice = (int) $product->effective_price;
                 $product->decrement('stock', $quantity);
+
+                $dbVerifiedCart[] = [
+                    'id' => $productId,
+                    'price' => $dbUnitPrice,
+                    'quantity' => $quantity,
+                ];
 
                 $orderItemsPayload[] = [
                     'product_id' => $productId,
                     'quantity' => $quantity,
-                    'price' => (int) $product->effective_price,
+                    'price' => $dbUnitPrice,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
             }
+
+            // Tính lại tổng tiền đơn hàng trực tiếp từ đơn giá sản phẩm trong Database (không tin dữ liệu từ client)
+            $summary = $this->calculateCartSummary($dbVerifiedCart, $appliedCouponSession, $shippingMode, $province, $district);
 
             $noteWithShipping = $validatedData['note'] ?? null;
             if ($summary['shippingFee'] > 0) {
@@ -285,18 +296,24 @@ class CheckoutService
                 $noteWithShipping = $noteWithShipping ? "{$noteWithShipping} {$shipTag}" : $shipTag;
             }
 
+            $paymentMethod = (string) $validatedData['payment_method'];
+            $initialPaymentStatus = in_array($paymentMethod, ['BANK_TRANSFER', 'MOMO_QR'], true)
+                ? 'PENDING_PAYMENT'
+                : 'UNPAID';
+
             $order = Order::query()->create([
                 'user_id' => $userId,
                 'customer_name' => $validatedData['customer_name'],
                 'phone' => $validatedData['phone'],
                 'address' => $validatedData['full_address'],
                 'note' => $noteWithShipping,
-                'payment_method' => $validatedData['payment_method'],
-                'payment_status' => 'UNPAID',
+                'payment_method' => $paymentMethod,
+                'payment_status' => $initialPaymentStatus,
                 'coupon_code' => $summary['appliedCoupon']['code'] ?? null,
                 'discount_amount' => $summary['discountAmount'],
                 'total_amount' => $summary['totalAmount'],
                 'status' => 'PENDING',
+                'order_status' => 'PENDING',
             ]);
 
             foreach ($orderItemsPayload as &$row) {
@@ -306,11 +323,15 @@ class CheckoutService
 
             OrderItem::query()->insert($orderItemsPayload);
 
+            if ($order->isQrPayment()) {
+                app(PaymentService::class)->initializeOrderPayment($order);
+            }
+
             if ($userId !== null) {
                 CartItem::query()->where('user_id', $userId)->delete();
             }
 
-            return $order;
+            return $order->fresh(['payment', 'items.product']);
         });
     }
 }

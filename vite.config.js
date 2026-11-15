@@ -8,4 +8,19 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    build: {
+        target: 'es2020',
+        minify: 'esbuild',
+        cssMinify: true,
+        sourcemap: false,
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (id.includes('node_modules')) {
+                        return 'vendor';
+                    }
+                },
+            },
+        },
+    },
 });

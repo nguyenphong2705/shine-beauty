@@ -32,16 +32,16 @@ class HomeController extends Controller
     public function index(Request $request): View
     {
         // 1. Lấy danh sách danh mục và thương hiệu có đếm số lượng sản phẩm tương ứng
-        $categories = Category::withCount('products')->get();
-        $brands = Brand::withCount('products')->get();
+        $categories = Cache::remember('home.categories.v1', 300, fn () => Category::withCount('products')->get());
+        $brands = Cache::remember('home.brands.v1', 300, fn () => Brand::withCount('products')->get());
 
         // 2. Lấy tổng số sản phẩm và top 6 sản phẩm bán chạy nhất (Best Sellers)
         $totalProductsCount = Cache::remember('home.total_products_count', 300, fn () => Product::count());
-        $bestSellers = Product::with(['category', 'brand'])
+        $bestSellers = Cache::remember('home.best_sellers.v1', 300, fn () => Product::with(['category', 'brand'])
             ->where('is_best_seller', true)
             ->latest()
             ->take(6)
-            ->get();
+            ->get());
 
         // 4. Xử lý bộ lọc sản phẩm theo loại da (Skin Explorer)
         $selectedSkin = $request->query('skin_type', 'Tất cả');

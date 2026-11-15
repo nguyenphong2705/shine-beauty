@@ -42,8 +42,8 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        $categories = Category::all();
-        $brands = Brand::all();
+        $categories = \Illuminate\Support\Facades\Cache::remember('catalog.categories.all.v1', 300, fn () => Category::all());
+        $brands = \Illuminate\Support\Facades\Cache::remember('catalog.brands.all.v1', 300, fn () => Brand::all());
 
         $filters = $this->sanitizeFilters($request, $categories, $brands);
 
@@ -53,7 +53,7 @@ class ProductController extends Controller
         if ($filters['search'] !== '') {
             $search = $filters['search'];
             // Cột sku có trong migration nhưng có thể chưa được migrate trên DB hiện tại
-            $hasSku = Schema::hasColumn('products', 'sku');
+            $hasSku = \Illuminate\Support\Facades\Cache::remember('schema.products.has_sku', 86400, fn () => Schema::hasColumn('products', 'sku'));
             $query->where(function ($q) use ($search, $hasSku) {
                 $q->where('name', 'ilike', "%{$search}%")
                   ->orWhere('ingredients', 'ilike', "%{$search}%")

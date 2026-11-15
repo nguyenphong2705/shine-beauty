@@ -595,6 +595,9 @@ class CosmeticsSeeder extends Seeder
             $createdProducts[] = Product::create($item);
         }
 
+        // Bổ sung đầy đủ bộ 44 sản phẩm (bao gồm 20 sản phẩm mở rộng cho 4 danh mục)
+        Product::ensureUnder500kProductsSeeded();
+
         // 4. Tạo Giỏ hàng đã lưu từ trước (Saved Cart Items) cho tài khoản khách hàng mẫu tuyenthanhthanh3979
         CartItem::create([
             'user_id' => $customerUser->id,

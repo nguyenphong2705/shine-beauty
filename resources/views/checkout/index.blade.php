@@ -23,42 +23,188 @@
             $successAfterDiscount = max(0, $successItemsSubtotal - $successDiscount);
             $successShippingFee = max(0, $successOrder->total_amount - $successAfterDiscount);
             $successPaymentLabel = match($successOrder->payment_method) {
-                'BANK_TRANSFER' => 'Chuyển khoản Ngân hàng (Mã QR VietQR)',
+                'BANK_TRANSFER' => 'Chuyển khoản Ngân hàng tự động (VietQR + SePay)',
                 'MOMO_QR' => 'Ví điện tử MoMo (Mã QR MoMo)',
                 default => 'Thanh toán khi nhận hàng (COD)',
             };
-            $orderTransferCode = 'SHINE ORDER' . $successOrder->id;
+            $orderCodeDisplay = $successOrder->order_code ?: ('DH' . now()->format('ymd') . str_pad((string) $successOrder->id, 4, '0', STR_PAD_LEFT));
+            $orderTransferCode = $paymentData['transfer_content'] ?? $orderCodeDisplay;
+            $vietQrInfo = $paymentData['vietqr'] ?? app(\App\Services\VietQRService::class)->generateQrData($successOrder, $orderTransferCode);
+            $remainingSeconds = $paymentData['remaining_seconds'] ?? 900;
             $isQrOrder = $successOrder->isQrPayment();
             $isOrderPaid = $successOrder->isPaid();
+            $isOrderExpired = $successOrder->isPaymentExpired();
         @endphp
-        <div class="max-w-2xl mx-auto py-8 text-center">
-            <div class="bg-white p-8 sm:p-10 rounded-3xl border {{ $isQrOrder && !$isOrderPaid ? 'border-amber-200' : 'border-sage-100' }} shadow-lg space-y-6">
-                @if($isQrOrder && !$isOrderPaid)
-                    <div class="w-20 h-20 mx-auto rounded-full bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center text-3xl font-bold">
-                        ⏳
+        <div id="bank-transfer-payment-root"
+             data-order-code="{{ $orderCodeDisplay }}"
+             data-remaining-seconds="{{ $remainingSeconds }}"
+             data-payment-status="{{ $successOrder->payment_status }}"
+             class="max-w-3xl mx-auto py-6 text-center space-y-6">
+            <div class="bg-white p-6 sm:p-10 rounded-3xl border {{ $isQrOrder && !$isOrderPaid ? 'border-amber-200' : 'border-sage-100' }} shadow-lg space-y-6">
+                @if($isQrOrder)
+                    <!-- B. MÀN HÌNH ĐANG CHỜ THANH TOÁN CHUYỂN KHOẢN NGÂN HÀNG (PENDING_PAYMENT) -->
+                    <div id="payment-view-pending" class="{{ (!$isOrderPaid && !$isOrderExpired && !in_array($successOrder->payment_status, ['UNDERPAID', 'OVERPAID', 'FAILED'], true)) ? '' : 'hidden' }} space-y-5">
+                        <div class="w-18 h-18 mx-auto rounded-full bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center text-3xl font-bold">
+                            ⏳
+                        </div>
+                        <div class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-800 bg-amber-100 border border-amber-300 px-4 py-1.5 rounded-full">
+                            <span class="w-2 h-2 rounded-full bg-amber-600 animate-ping"></span>
+                            <span id="sepay-polling-indicator">Đang chờ thanh toán • Tự động kiểm tra mỗi 3 giây</span>
+                        </div>
+                        <h1 class="font-serif text-2xl sm:text-3xl font-bold text-stone-800">
+                            Đơn Hàng <span data-bind-order-code>{{ $orderCodeDisplay }}</span> (#ORDER-{{ $successOrder->id }}) — Chờ Chuyển Khoản
+                        </h1>
+                        <p class="text-sm text-stone-600 leading-relaxed max-w-xl mx-auto">
+                            Vui lòng quét mã <strong>VietQR</strong> bên dưới bằng ứng dụng Ngân hàng. Hệ thống <strong>SePay Webhook</strong> sẽ tự động đối chiếu số tiền và nội dung chuyển khoản để xác nhận thanh toán tức thì.
+                        </p>
+
+                        <!-- Giao diện Bank Transfer Payment chuyên nghiệp -->
+                        <div class="bg-blue-50/70 border-2 border-blue-200 rounded-3xl p-5 sm:p-6 text-left space-y-4">
+                            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-blue-100 pb-3.5">
+                                <div>
+                                    <span class="text-[11px] font-bold uppercase tracking-wider text-blue-600 block">Cổng Thanh Toán Tự Động VietQR × SePay</span>
+                                    <h3 class="font-serif text-lg font-bold text-stone-800">Quét Mã QR Ngân Hàng Để Thanh Toán</h3>
+                                </div>
+                                <div class="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-2xl border border-amber-200 shadow-sm">
+                                    <span class="text-[11px] font-semibold text-stone-500">Thời gian còn lại:</span>
+                                    <strong id="vietqr-countdown-timer" class="font-mono text-base font-bold text-amber-700">
+                                        {{ sprintf('%02d:%02d', intdiv((int) $remainingSeconds, 60), ((int) $remainingSeconds) % 60) }}
+                                    </strong>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
+                                <div class="sm:col-span-5 flex flex-col items-center bg-white p-4 rounded-2xl border border-blue-100 shadow-sm">
+                                    <img id="vietqr-dynamic-image"
+                                         src="{{ $vietQrInfo['qr_image_url'] }}"
+                                         onerror="this.onerror=null;this.src='{{ $vietQrInfo['fallback_qr_url'] }}';"
+                                         alt="Mã QR Ngân hàng VietQR"
+                                         class="w-52 h-52 object-contain rounded-xl">
+                                    <span class="text-[11px] text-blue-700 font-semibold mt-2 text-center">
+                                        📷 Mở App Ngân hàng bất kỳ để quét mã QR
+                                    </span>
+                                </div>
+
+                                <div class="sm:col-span-7 space-y-2.5 text-xs">
+                                    <div class="bg-white p-3 rounded-xl border border-blue-100 flex items-center justify-between">
+                                        <div>
+                                            <span class="text-stone-400 block">Mã đơn hàng:</span>
+                                            <strong data-bind-order-code class="font-mono text-sm text-stone-900">{{ $orderCodeDisplay }}</strong>
+                                        </div>
+                                        <span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-bold text-[11px]">PENDING_PAYMENT</span>
+                                    </div>
+
+                                    <div class="bg-white p-3 rounded-xl border border-blue-100">
+                                        <span class="text-stone-400 block">Tên ngân hàng thụ hưởng:</span>
+                                        <strong id="vietqr-bank-name" class="text-stone-800 text-sm">{{ $vietQrInfo['bank_name'] }}</strong>
+                                    </div>
+
+                                    <div class="bg-white p-3 rounded-xl border border-blue-100 flex items-center justify-between gap-2">
+                                        <div>
+                                            <span class="text-stone-400 block">Số tài khoản nhận tiền:</span>
+                                            <strong id="vietqr-account-number" class="font-mono text-base text-blue-700">{{ $vietQrInfo['account_number'] }}</strong>
+                                            <span class="block text-[11px] text-stone-500">Chủ TK: <strong id="vietqr-account-name">{{ $vietQrInfo['account_name'] }}</strong></span>
+                                        </div>
+                                        <button type="button"
+                                                onclick="copyText(document.getElementById('vietqr-account-number').textContent, this)"
+                                                class="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] transition flex-shrink-0 cursor-pointer">
+                                            Sao chép STK
+                                        </button>
+                                    </div>
+
+                                    <div class="bg-white p-3 rounded-xl border border-blue-100 flex items-center justify-between gap-2">
+                                        <div>
+                                            <span class="text-stone-400 block">Số tiền cần thanh toán:</span>
+                                            <strong id="vietqr-amount" class="text-base text-emerald-700">{{ number_format($successOrder->total_amount, 0, ',', '.') }}₫</strong>
+                                        </div>
+                                        <button type="button"
+                                                onclick="copyText('{{ (int) $successOrder->total_amount }}', this)"
+                                                class="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px] transition flex-shrink-0 cursor-pointer">
+                                            Sao chép số tiền
+                                        </button>
+                                    </div>
+
+                                    <div class="bg-white p-3 rounded-xl border-2 border-blue-300 flex items-center justify-between gap-2">
+                                        <div>
+                                            <span class="text-stone-400 block">Nội dung chuyển khoản (Bắt buộc giữ nguyên):</span>
+                                            <strong id="vietqr-transfer-content" class="font-mono text-base font-bold text-blue-800">{{ $orderTransferCode }}</strong>
+                                        </div>
+                                        <button type="button"
+                                                onclick="copyText(document.getElementById('vietqr-transfer-content').textContent, this)"
+                                                class="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] transition flex-shrink-0 cursor-pointer">
+                                            Sao chép nội dung
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-white/90 border border-blue-100 rounded-2xl p-3.5 text-[11px] text-stone-600 flex flex-wrap items-center justify-between gap-2">
+                                <span>🔒 Hệ thống chỉ xác nhận thanh toán khi nhận được Webhook xác thực giao dịch thật từ ngân hàng qua SePay.</span>
+                                <button type="button"
+                                        onclick="window.triggerManualStatusCheck && window.triggerManualStatusCheck()"
+                                        class="px-3 py-1.5 rounded-xl bg-stone-900 hover:bg-sage-600 text-white font-bold text-[11px] transition cursor-pointer">
+                                    🔄 Kiểm tra ngay
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <span class="inline-block text-xs font-bold uppercase tracking-widest text-amber-800 bg-amber-100 border border-amber-300 px-3.5 py-1 rounded-full">
-                        Đơn Hàng Chưa Thanh Toán Thành Công
-                    </span>
-                    <h1 class="font-serif text-2xl sm:text-3xl font-bold text-stone-800">
-                        Đơn Hàng #ORDER-{{ $successOrder->id }} — Chưa Thanh Toán Thành Công
-                    </h1>
-                    <p class="text-sm text-stone-600 leading-relaxed">
-                        Đơn hàng của bạn hiện đang ở trạng thái <strong>Đơn hàng chưa thanh toán thành công</strong>. Hệ thống chỉ xác nhận đã thanh toán cho đơn hàng sau khi xác thực đã chuyển khoản thành công qua mã QR bên dưới.
-                    </p>
-                @elseif($isQrOrder && $isOrderPaid)
-                    <div class="w-20 h-20 mx-auto rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center text-3xl font-bold">
-                        ✓
+
+                    <!-- C. MÀN HÌNH THANH TOÁN THÀNH CÔNG (PAYMENT SUCCESS) -->
+                    <div id="payment-view-success" class="{{ $isOrderPaid ? '' : 'hidden' }} space-y-5">
+                        <div class="w-20 h-20 mx-auto rounded-full bg-emerald-600 text-white border-4 border-emerald-100 flex items-center justify-center text-4xl font-bold shadow-md">
+                            ✓
+                        </div>
+                        <span class="inline-block text-xs font-bold uppercase tracking-widest text-emerald-800 bg-emerald-100 border border-emerald-300 px-4 py-1.5 rounded-full">
+                            Thanh Toán Chuyển Khoản Thành Công (PAID)
+                        </span>
+                        <h1 class="font-serif text-2xl sm:text-3xl font-bold text-stone-800">
+                            Đã Xác Nhận Thanh Toán Cho Đơn Hàng <span data-bind-order-code>{{ $orderCodeDisplay }}</span>!
+                        </h1>
+                        <p class="text-sm text-stone-600 leading-relaxed max-w-xl mx-auto">
+                            Cảm ơn <strong>{{ $successOrder->customer_name }}</strong>! Hệ thống SePay đã xác thực giao dịch chuyển khoản ngân hàng và chuyển trạng thái đơn hàng sang <strong>ĐÃ XÁC NHẬN (CONFIRMED)</strong>.
+                        </p>
+
+                        <div class="bg-emerald-50/80 border-2 border-emerald-200 rounded-3xl p-6 text-left space-y-3 text-xs max-w-xl mx-auto">
+                            <div class="flex items-center justify-between border-b border-emerald-200 pb-2.5">
+                                <h3 class="font-serif text-base font-bold text-emerald-900">✓ Biên Lai Thanh Toán Điện Tử</h3>
+                                <span class="text-[11px] font-bold bg-emerald-600 text-white px-3 py-0.5 rounded-full">PAID • CONFIRMED</span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="bg-white p-3 rounded-xl border border-emerald-100">
+                                    <span class="text-stone-400 block">Mã đơn hàng:</span>
+                                    <strong data-bind-order-code class="font-mono text-sm text-stone-900">{{ $orderCodeDisplay }}</strong>
+                                </div>
+                                <div class="bg-white p-3 rounded-xl border border-emerald-100">
+                                    <span class="text-stone-400 block">Số tiền đã thanh toán:</span>
+                                    <strong data-bind-paid-amount class="text-sm text-emerald-700">{{ number_format($successOrder->total_amount, 0, ',', '.') }}₫</strong>
+                                </div>
+                                <div class="bg-white p-3 rounded-xl border border-emerald-100">
+                                    <span class="text-stone-400 block">Mã giao dịch ngân hàng:</span>
+                                    <strong data-bind-tx-code class="font-mono text-sm text-emerald-700">{{ $successOrder->transaction_code ?? 'SEPAY-VERIFIED' }}</strong>
+                                </div>
+                                <div class="bg-white p-3 rounded-xl border border-emerald-100">
+                                    <span class="text-stone-400 block">Thời gian thanh toán:</span>
+                                    <strong data-bind-paid-at class="text-stone-800">{{ $successOrder->paid_at?->format('d/m/Y H:i:s') ?? now()->format('d/m/Y H:i:s') }}</strong>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <span class="inline-block text-xs font-bold uppercase tracking-widest text-emerald-800 bg-emerald-100 border border-emerald-300 px-3.5 py-1 rounded-full">
-                        Đã Xác Thực Chuyển Khoản — Đã Thanh Toán Thành Công
-                    </span>
-                    <h1 class="font-serif text-2xl sm:text-3xl font-bold text-stone-800">
-                        Đã Xác Nhận Thanh Toán Cho Đơn Hàng #ORDER-{{ $successOrder->id }}!
-                    </h1>
-                    <p class="text-sm text-stone-600 leading-relaxed">
-                        Cảm ơn <strong>{{ $successOrder->customer_name }}</strong>! Hệ thống đã xác thực chuyển khoản thành công (Mã GD: <code>{{ $successOrder->transaction_code }}</code>) và xác nhận đơn hàng của bạn.
-                    </p>
+
+                    <!-- D. MÀN HÌNH THANH TOÁN THẤT BẠI / HẾT HẠN (PAYMENT FAILED / EXPIRED) -->
+                    <div id="payment-view-failed" class="{{ (!$isOrderPaid && ($isOrderExpired || in_array($successOrder->payment_status, ['UNDERPAID', 'OVERPAID', 'FAILED'], true))) ? '' : 'hidden' }} space-y-4">
+                        <div class="w-20 h-20 mx-auto rounded-full bg-red-50 text-red-600 border-2 border-red-200 flex items-center justify-center text-3xl font-bold">
+                            ✕
+                        </div>
+                        <span class="inline-block text-xs font-bold uppercase tracking-widest text-red-800 bg-red-100 border border-red-300 px-4 py-1.5 rounded-full">
+                            Giao Dịch Chưa Hoàn Tất Hoặc Đã Hết Hạn
+                        </span>
+                        <h2 class="font-serif text-2xl font-bold text-stone-800">
+                            Đơn Hàng <span data-bind-order-code>{{ $orderCodeDisplay }}</span> — {{ $successOrder->payment_status_label }}
+                        </h2>
+                        <p id="payment-failed-reason" class="text-sm text-stone-600 max-w-xl mx-auto leading-relaxed">
+                            Đơn hàng đã hết thời gian thanh toán hoặc số tiền chuyển khoản chưa khớp với giá trị đơn hàng. Nếu bạn đã chuyển khoản, giao dịch đã được lưu lại để Quản trị viên đối soát thủ công.
+                        </p>
+                    </div>
                 @else
                     <div class="w-20 h-20 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-3xl font-bold">
                         ✓
@@ -75,7 +221,7 @@
                 <div class="bg-[#F5FAF7] p-5 rounded-2xl border border-sage-100 text-left text-sm space-y-2.5">
                     <div class="flex justify-between gap-4">
                         <span class="text-stone-500">Mã đơn hàng:</span>
-                        <span class="font-mono font-bold text-stone-800">#ORDER-{{ $successOrder->id }}</span>
+                        <span class="font-mono font-bold text-stone-800">{{ $orderCodeDisplay }} (#ORDER-{{ $successOrder->id }})</span>
                     </div>
                     <div class="flex justify-between gap-4">
                         <span class="text-stone-500">Số điện thoại:</span>
@@ -97,7 +243,7 @@
                         <span class="text-stone-500">Trạng thái thanh toán:</span>
                         @if($isQrOrder && !$isOrderPaid)
                             <span id="order-payment-status-badge" class="font-bold text-amber-800 bg-amber-100 px-3 py-1 rounded-full border border-amber-300 text-xs">
-                                ⏳ Đơn hàng chưa thanh toán thành công
+                                ⏳ {{ $successOrder->payment_status_label }}
                             </span>
                         @elseif($isQrOrder && $isOrderPaid)
                             <span id="order-payment-status-badge" class="font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300 text-xs">
@@ -133,209 +279,12 @@
                     </div>
                 </div>
 
-                @if($successOrder->payment_method === 'BANK_TRANSFER')
-                    <div class="bg-blue-50/60 border border-blue-200 rounded-3xl p-6 text-left space-y-4">
-                        <div class="flex items-center justify-between border-b border-blue-100 pb-3">
-                            <div>
-                                <span class="text-[11px] font-bold uppercase tracking-wider text-blue-600 block">VietQR 24/7 Tự Động</span>
-                                <h3 class="font-serif text-lg font-bold text-stone-800">Quét Mã QR Ngân Hàng Để Thanh Toán</h3>
-                            </div>
-                            <span class="text-xs font-bold bg-blue-600 text-white px-3 py-1 rounded-full">Vietcombank</span>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
-                            <div class="sm:col-span-5 flex flex-col items-center bg-white p-3.5 rounded-2xl border border-blue-100 shadow-xs">
-                                <img src="https://img.vietqr.io/image/VCB-1029384756-compact2.png?amount={{ $successOrder->total_amount }}&addInfo={{ urlencode($orderTransferCode) }}&accountName={{ urlencode('SHINE BEAUTY COSMETICS') }}"
-                                     onerror="this.onerror=null;this.src='https://api.qrserver.com/v1/create-qr-code/?size=240x240&data={{ urlencode('VCB|1029384756|SHINE BEAUTY COSMETICS|' . $successOrder->total_amount . '|' . $orderTransferCode) }}';"
-                                     alt="Mã QR Ngân hàng"
-                                     class="w-48 h-48 object-contain rounded-xl">
-                                <span class="text-[11px] text-stone-400 mt-1.5">Quét bằng mọi ứng dụng Ngân hàng</span>
-                            </div>
-                            <div class="sm:col-span-7 space-y-2.5 text-xs">
-                                <div class="bg-white p-3 rounded-xl border border-blue-100">
-                                    <span class="text-stone-400 block">Ngân hàng thụ hưởng:</span>
-                                    <strong class="text-stone-800 text-sm">Vietcombank (VCB) - CN TP.HCM</strong>
-                                </div>
-                                <div class="bg-white p-3 rounded-xl border border-blue-100 flex items-center justify-between">
-                                    <div>
-                                        <span class="text-stone-400 block">Số tài khoản:</span>
-                                        <strong class="font-mono text-sm text-blue-700">1029384756</strong>
-                                        <span class="block text-[11px] text-stone-500">Chủ TK: SHINE BEAUTY COSMETICS</span>
-                                    </div>
-                                    <button type="button" onclick="copyText('1029384756', this)" class="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px]">Sao chép</button>
-                                </div>
-                                <div class="bg-white p-3 rounded-xl border border-blue-100 flex items-center justify-between">
-                                    <div>
-                                        <span class="text-stone-400 block">Số tiền & Nội dung chuyển khoản:</span>
-                                        <strong class="text-sm text-emerald-700">{{ number_format($successOrder->total_amount, 0, ',', '.') }}₫</strong>
-                                        <span class="block font-mono font-bold text-stone-800 mt-0.5">{{ $orderTransferCode }}</span>
-                                    </div>
-                                    <button type="button" onclick="copyText('{{ $orderTransferCode }}', this)" class="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px]">Chép nội dung</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @elseif($successOrder->payment_method === 'MOMO_QR')
-                    <div class="bg-[#FDF2F8] border border-pink-200 rounded-3xl p-6 text-left space-y-4">
-                        <div class="flex items-center justify-between border-b border-pink-200 pb-3">
-                            <div>
-                                <span class="text-[11px] font-bold uppercase tracking-wider text-[#A50064] block">Ví Điện Tử MoMo</span>
-                                <h3 class="font-serif text-lg font-bold text-stone-800">Quét Mã QR MoMo Để Thanh Toán</h3>
-                            </div>
-                            <span class="text-xs font-bold bg-[#A50064] text-white px-3 py-1 rounded-full">MoMo QR</span>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
-                            <div class="sm:col-span-5 flex flex-col items-center bg-white p-3.5 rounded-2xl border border-pink-200 shadow-xs">
-                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&color=A50064&bgcolor=FFFFFF&margin=8&data={{ urlencode('2|99|0901000888|SHINE BEAUTY COSMETICS|admin@luminabeauty.vn|0|0|' . $successOrder->total_amount . '|' . $orderTransferCode . '|transfer_myqr') }}"
-                                     alt="Mã QR MoMo"
-                                     class="w-44 h-44 object-contain rounded-xl">
-                                <span class="text-[11px] text-[#A50064] font-semibold mt-1.5">Mở App MoMo → Chọn "Quét Mã"</span>
-                            </div>
-                            <div class="sm:col-span-7 space-y-2.5 text-xs">
-                                <div class="bg-white p-3 rounded-xl border border-pink-100">
-                                    <span class="text-stone-400 block">Chủ ví MoMo nhận tiền:</span>
-                                    <strong class="text-stone-800 text-sm">SHINE BEAUTY COSMETICS</strong>
-                                </div>
-                                <div class="bg-white p-3 rounded-xl border border-pink-100 flex items-center justify-between">
-                                    <div>
-                                        <span class="text-stone-400 block">Số điện thoại Ví MoMo:</span>
-                                        <strong class="font-mono text-sm text-[#A50064]">0901000888</strong>
-                                    </div>
-                                    <button type="button" onclick="copyText('0901000888', this)" class="px-2.5 py-1.5 rounded-lg bg-pink-50 hover:bg-pink-100 text-[#A50064] font-bold text-[11px]">Sao chép</button>
-                                </div>
-                                <div class="bg-white p-3 rounded-xl border border-pink-100 flex items-center justify-between">
-                                    <div>
-                                        <span class="text-stone-400 block">Số tiền & Lời nhắn MoMo:</span>
-                                        <strong class="text-sm text-[#A50064]">{{ number_format($successOrder->total_amount, 0, ',', '.') }}₫</strong>
-                                        <span class="block font-mono font-bold text-stone-800 mt-0.5">{{ $orderTransferCode }}</span>
-                                    </div>
-                                    <button type="button" onclick="copyText('{{ $orderTransferCode }}', this)" class="px-2.5 py-1.5 rounded-lg bg-pink-50 hover:bg-pink-100 text-[#A50064] font-bold text-[11px]">Chép lời nhắn</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
-                @if($isQrOrder)
-                    @if(!$isOrderPaid)
-                        <!-- KHỐI XÁC THỰC CHUYỂN KHOẢN MÃ QR -->
-                        <div id="qr-verification-box" class="bg-amber-50/70 border-2 border-amber-300 rounded-3xl p-6 text-left space-y-4">
-                            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200 pb-3">
-                                <div>
-                                    <span class="text-[11px] font-bold uppercase tracking-wider text-amber-700 block">
-                                        🔐 Bước Bắt Buộc Để Xác Nhận Thanh Toán
-                                    </span>
-                                    <h3 class="font-serif text-lg font-bold text-stone-800">
-                                        Xác Thực Giao Dịch Chuyển Khoản Mã QR
-                                    </h3>
-                                </div>
-                                <button type="button"
-                                    onclick="checkQrPaymentLive('{{ route('checkout.qr.check', $successOrder) }}')"
-                                    class="px-3.5 py-2 rounded-xl bg-stone-900 hover:bg-sage-600 text-white text-xs font-bold transition cursor-pointer">
-                                    🔄 Kiểm Tra Trạng Thái Chuyển Khoản Tự Động
-                                </button>
-                            </div>
-
-                            <div id="qr-live-check-result" class="hidden text-xs px-4 py-3 rounded-2xl border"></div>
-
-                            <p class="text-xs text-amber-900 leading-relaxed">
-                                Khi chưa xác thực được giao dịch chuyển khoản thành công, đơn hàng này được ghi nhận là <strong>"Đơn hàng chưa thanh toán thành công"</strong>. Sau khi quét mã QR và hoàn tất chuyển tiền, vui lòng nhập thông tin giao dịch từ biên lai để hệ thống đối soát:
-                            </p>
-
-                            <form action="{{ route('checkout.qr.verify', $successOrder) }}" method="POST" class="space-y-3.5 text-xs">
-                                @csrf
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    <div>
-                                        <label for="verify-tx-code" class="block text-[11px] font-bold text-stone-700 mb-1">
-                                            Mã giao dịch Ngân hàng / MoMo *
-                                        </label>
-                                        <input type="text" id="verify-tx-code" name="transaction_code" required
-                                            value="{{ old('transaction_code') }}"
-                                            placeholder="VD: FT2631988899"
-                                            class="w-full px-3.5 py-2.5 text-xs font-mono font-bold uppercase rounded-xl border border-amber-300 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
-                                    </div>
-                                    <div>
-                                        <label for="verify-transfer-amount" class="block text-[11px] font-bold text-stone-700 mb-1">
-                                            Số tiền đã chuyển khoản (₫) *
-                                        </label>
-                                        <input type="text" id="verify-transfer-amount" name="transfer_amount" required
-                                            value="{{ old('transfer_amount') }}"
-                                            placeholder="VD: {{ $successOrder->total_amount }}"
-                                            class="w-full px-3.5 py-2.5 text-xs font-mono font-bold rounded-xl border border-amber-300 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
-                                    </div>
-                                    <div>
-                                        <label for="verify-transfer-content" class="block text-[11px] font-bold text-stone-700 mb-1">
-                                            Nội dung chuyển khoản *
-                                        </label>
-                                        <input type="text" id="verify-transfer-content" name="transfer_content" required
-                                            value="{{ old('transfer_content') }}"
-                                            placeholder="VD: {{ $orderTransferCode }}"
-                                            class="w-full px-3.5 py-2.5 text-xs font-mono font-bold uppercase rounded-xl border border-amber-300 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
-                                    </div>
-                                </div>
-
-                                <div class="flex flex-wrap items-center justify-between gap-2">
-                                    <button type="button"
-                                        onclick="fillVerifiedTransferSample('{{ $successOrder->total_amount }}', '{{ $orderTransferCode }}')"
-                                        class="px-3 py-1.5 rounded-lg bg-white hover:bg-amber-100 text-amber-800 border border-amber-300 font-semibold text-[11px] transition cursor-pointer">
-                                        Điền đúng số tiền &amp; nội dung từ QR
-                                    </button>
-                                    <span class="text-[11px] text-stone-500">
-                                        Yêu cầu khớp số tiền <strong>{{ number_format($successOrder->total_amount, 0, ',', '.') }}₫</strong> &amp; nội dung <strong>{{ $orderTransferCode }}</strong>
-                                    </span>
-                                </div>
-
-                                <label class="flex items-start gap-2.5 bg-white p-3 rounded-xl border border-amber-200 cursor-pointer">
-                                    <input type="checkbox" name="confirm_transferred" value="1" required {{ old('confirm_transferred') ? 'checked' : '' }} class="mt-0.5 accent-emerald-600">
-                                    <span class="text-xs text-stone-700 font-medium">
-                                        Tôi xác nhận đã chuyển khoản thành công đúng số tiền và nội dung trên
-                                    </span>
-                                </label>
-
-                                <button type="submit"
-                                    class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-6 rounded-2xl shadow-md transition text-sm cursor-pointer">
-                                    🔐 Xác Thực Đã Chuyển Khoản &amp; Xác Nhận Thanh Toán Cho Đơn Hàng
-                                </button>
-                            </form>
-                        </div>
-                    @else
-                        <!-- BIÊN LAI XÁC THỰC ĐÃ THANH TOÁN -->
-                        <div id="qr-verified-receipt-box" class="bg-emerald-50 border-2 border-emerald-200 rounded-3xl p-6 text-left space-y-3 text-xs">
-                            <div class="flex items-center justify-between border-b border-emerald-200 pb-2.5">
-                                <h3 class="font-serif text-base font-bold text-emerald-900">
-                                    ✓ Biên Lai Đã Xác Thực Thanh Toán Thành Công
-                                </h3>
-                                <span class="text-[11px] font-bold bg-emerald-600 text-white px-3 py-0.5 rounded-full">
-                                    ĐÃ THANH TOÁN
-                                </span>
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                <div class="bg-white p-3 rounded-xl border border-emerald-100">
-                                    <span class="text-stone-400 block">Mã giao dịch đã xác thực:</span>
-                                    <strong class="font-mono text-sm text-emerald-700">{{ $successOrder->transaction_code }}</strong>
-                                </div>
-                                <div class="bg-white p-3 rounded-xl border border-emerald-100">
-                                    <span class="text-stone-400 block">Số tiền đã xác thực:</span>
-                                    <strong class="text-sm text-emerald-700">{{ number_format($successOrder->total_amount, 0, ',', '.') }}₫</strong>
-                                </div>
-                                <div class="bg-white p-3 rounded-xl border border-emerald-100">
-                                    <span class="text-stone-400 block">Nội dung đối chiếu:</span>
-                                    <strong class="font-mono text-stone-800">{{ $orderTransferCode }}</strong>
-                                </div>
-                                <div class="bg-white p-3 rounded-xl border border-emerald-100">
-                                    <span class="text-stone-400 block">Thời gian xác thực:</span>
-                                    <strong class="text-stone-800">{{ $successOrder->paid_at?->format('d/m/Y H:i:s') ?? now()->format('d/m/Y H:i:s') }}</strong>
-                                </div>
-                            </div>
-                        </div>
-                    @endif
-                @endif
-
                 <div class="flex flex-wrap justify-center gap-4 pt-2">
-                    <a href="{{ route('products.index') }}" class="bg-sage-500 hover:bg-sage-600 text-white font-semibold px-7 py-3 rounded-full text-sm transition">
-                        Tiếp Tục Mua Sắm
+                    <a href="{{ route('orders.track', ['phone' => $successOrder->phone]) }}" class="bg-stone-900 hover:bg-stone-800 text-white font-semibold px-7 py-3 rounded-full text-sm transition">
+                        🔍 Xem Chi Tiết Đơn Hàng
                     </a>
-                    <a href="{{ route('orders.track', ['phone' => $successOrder->phone]) }}" class="bg-sage-50 hover:bg-sage-100 text-sage-700 font-semibold px-7 py-3 rounded-full text-sm transition border border-sage-200">
-                        🔍 Tra Cứu Đơn Hàng Đã Mua
+                    <a href="{{ route('products.index') }}" class="bg-sage-500 hover:bg-sage-600 text-white font-semibold px-7 py-3 rounded-full text-sm transition">
+                        🛍️ Tiếp Tục Mua Sắm
                     </a>
                 </div>
             </div>

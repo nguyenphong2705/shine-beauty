@@ -90,6 +90,7 @@
     </style>
 </head>
 <body class="font-sans antialiased min-h-screen flex flex-col bg-[#F5FAF7] text-stone-800">
+    @include('partials.loading-animation')
     @php
         $cart = session('cart', []);
         $cartCount = collect($cart)->sum('quantity');
@@ -129,6 +130,7 @@
                     <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'text-sage-600 font-semibold' : 'text-stone-700 hover:text-sage-500' }}">{{ __('Trang Chủ') }}</a>
                     <a href="{{ route('products.index') }}" class="{{ request()->routeIs('products.*') && !request('category') ? 'text-sage-600 font-semibold' : 'text-stone-700 hover:text-sage-500' }}">{{ __('Sản Phẩm') }}</a>
                     <a href="{{ route('products.index', ['category' => 'cham-soc-da']) }}" class="{{ request('category') === 'cham-soc-da' ? 'text-sage-600 font-semibold' : 'text-stone-700 hover:text-sage-500' }}">{{ __('Chăm Sóc Da') }}</a>
+                    <a href="{{ route('blog.index') }}" class="{{ request()->routeIs('blog.*') ? 'text-sage-600 font-semibold' : 'text-stone-700 hover:text-sage-500' }}">{{ __('Blog Làm Đẹp') }}</a>
                     <a href="{{ route('orders.track') }}" class="{{ request()->routeIs('orders.track') ? 'text-sage-600 font-semibold' : 'text-stone-700 hover:text-sage-500' }}">{{ __('Tra Cứu Đơn Hàng') }}</a>
                 </nav>
 
@@ -606,6 +608,7 @@
                     <li><a href="{{ route('products.index', ['category' => 'trang-diem']) }}" class="hover:text-white">Trang điểm cao cấp</a></li>
                     <li><a href="{{ route('products.index', ['category' => 'cham-soc-co-the']) }}" class="hover:text-white">Chăm sóc cơ thể</a></li>
                     <li><a href="{{ route('products.index', ['category' => 'nuoc-hoa']) }}" class="hover:text-white">Nước hoa chính hãng</a></li>
+                    <li><a href="{{ route('blog.index') }}" class="hover:text-white">Blog mỹ phẩm &amp; chăm sóc da</a></li>
                 </ul>
             </div>
             <div>

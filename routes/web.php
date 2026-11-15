@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\BlogController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CustomerAuthController;
@@ -152,6 +153,12 @@ Route::get('/san-pham', [ProductController::class, 'index'])->name('products.ind
  * - Chức năng: Xem mô tả, hoạt chất/thành phần, hình ảnh, đánh giá và 4 sản phẩm liên quan.
  */
 Route::get('/san-pham/{slug}', [ProductController::class, 'show'])->name('products.show');
+
+/**
+ * Danh mục Blog Mỹ Phẩm & Chăm Sóc Da (/blog và /blog/{slug}).
+ */
+Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
+Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 
 
 // =========================================================================
@@ -540,6 +547,12 @@ Route::patch('/quan-tri/don-hang/{order}/trang-thai', [AdminController::class, '
  * - Phương thức: PATCH | Đường dẫn: /quan-tri/don-hang/{order}/xac-thuc-thanh-toan | Controller: AdminController@verifyOrderPayment
  */
 Route::patch('/quan-tri/don-hang/{order}/xac-thuc-thanh-toan', [AdminController::class, 'verifyOrderPayment'])->name('admin.orders.verify-payment');
+
+/**
+ * Trang Quản lý Giao dịch Ngân hàng & Đối soát SePay Webhook dành cho Admin.
+ */
+Route::get('/quan-tri/giao-dich-thanh-toan', [AdminController::class, 'payments'])->name('admin.payments.index');
+Route::post('/quan-tri/giao-dich-thanh-toan/{transaction}/doi-soat', [AdminController::class, 'reconcilePaymentTransaction'])->name('admin.payments.reconcile');
 
 /**
  * Xóa một đơn hàng khỏi hệ thống quản trị.
