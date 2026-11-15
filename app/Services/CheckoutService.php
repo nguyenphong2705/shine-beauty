@@ -292,6 +292,7 @@ class CheckoutService
                 'address' => $validatedData['full_address'],
                 'note' => $noteWithShipping,
                 'payment_method' => $validatedData['payment_method'],
+                'payment_status' => 'UNPAID',
                 'coupon_code' => $summary['appliedCoupon']['code'] ?? null,
                 'discount_amount' => $summary['discountAmount'],
                 'total_amount' => $summary['totalAmount'],

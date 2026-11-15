@@ -200,6 +200,14 @@
         </div>
     @endif
 
+    @if(session('warning'))
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4" role="status">
+            <div class="bg-amber-50 border border-amber-300 text-amber-900 px-5 py-3.5 rounded-2xl text-sm font-medium flex items-center justify-between shadow-sm">
+                <span>⏳ {{ session('warning') }}</span>
+            </div>
+        </div>
+    @endif
+
     @if(session('error'))
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4" role="alert">
             <div class="bg-red-50 border border-red-200 text-red-700 px-5 py-3.5 rounded-2xl text-sm font-medium">

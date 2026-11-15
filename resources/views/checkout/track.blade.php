@@ -34,14 +34,23 @@
                 </p>
 
                 @foreach($orders as $order)
-                    <div class="bg-white p-6 rounded-3xl border border-sage-100 shadow-xs space-y-4">
+                    @php
+                        $isQrUnpaid = $order->isQrPayment() && !$order->isPaid();
+                        $isQrPaid = $order->isQrPayment() && $order->isPaid();
+                        $pmLabel = match($order->payment_method) {
+                            'BANK_TRANSFER' => 'Chuyển khoản QR Ngân hàng',
+                            'MOMO_QR' => 'Thanh toán QR MoMo',
+                            default => 'Thanh toán khi nhận hàng (COD)',
+                        };
+                    @endphp
+                    <div class="bg-white p-6 rounded-3xl border {{ $isQrUnpaid && $order->status !== 'CANCELLED' ? 'border-amber-200' : 'border-sage-100' }} shadow-xs space-y-4">
                         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-sage-50 pb-3">
                             <div>
                                 <span class="font-mono font-bold text-stone-800">#ORDER-{{ $order->id }}</span>
                                 <span class="text-xs text-stone-400 ml-2">{{ $order->created_at?->format('d/m/Y H:i') }}</span>
                             </div>
-                            <span class="text-xs font-bold px-3 py-1 rounded-full bg-sage-50 text-sage-600 border border-sage-200">
-                                Trạng thái: {{ $order->status }}
+                            <span class="text-xs font-bold px-3 py-1 rounded-full border {{ $isQrUnpaid && $order->status !== 'CANCELLED' ? 'bg-amber-50 text-amber-800 border-amber-300' : 'bg-sage-50 text-sage-600 border-sage-200' }}">
+                                Trạng thái: {{ $order->display_status_label }}
                             </span>
                         </div>
 
@@ -50,14 +59,23 @@
                             <p><strong>Địa chỉ giao:</strong> {{ $order->address }}</p>
                         </div>
 
+                        @if($isQrUnpaid)
+                            <div class="flex flex-wrap items-center justify-between gap-2 bg-amber-50/80 border border-amber-200 rounded-2xl px-4 py-2.5 text-xs">
+                                <span class="font-bold text-amber-800">
+                                    ⏳ Đơn hàng chưa thanh toán thành công
+                                </span>
+                                <a href="{{ route('checkout.index', ['success_order_id' => $order->id]) }}"
+                                    class="font-bold text-amber-900 bg-white hover:bg-amber-100 border border-amber-300 px-3 py-1 rounded-full transition">
+                                    💳 Quét QR &amp; Xác thực thanh toán ngay →
+                                </a>
+                            </div>
+                        @elseif($isQrPaid)
+                            <div class="bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-2 text-xs font-bold text-emerald-800">
+                                ✓ Đã thanh toán cho đơn hàng (Mã GD: {{ $order->transaction_code }})
+                            </div>
+                        @endif
+
                         <div class="border-t border-sage-50 pt-3 flex items-center justify-between">
-                            @php
-                                $pmLabel = match($order->payment_method) {
-                                    'BANK_TRANSFER' => 'Chuyển khoản QR Ngân hàng',
-                                    'MOMO_QR' => 'Thanh toán QR MoMo',
-                                    default => 'Thanh toán khi nhận hàng (COD)',
-                                };
-                            @endphp
                             <div class="text-xs text-stone-500">
                                 {{ $order->items->count() }} sản phẩm • {{ $pmLabel }}
                                 @if($order->coupon_code)

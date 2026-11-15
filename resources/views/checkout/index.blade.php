@@ -28,19 +28,49 @@
                 default => 'Thanh toán khi nhận hàng (COD)',
             };
             $orderTransferCode = 'SHINE ORDER' . $successOrder->id;
+            $isQrOrder = $successOrder->isQrPayment();
+            $isOrderPaid = $successOrder->isPaid();
         @endphp
         <div class="max-w-2xl mx-auto py-8 text-center">
-            <div class="bg-white p-8 sm:p-10 rounded-3xl border border-sage-100 shadow-lg space-y-6">
-                <div class="w-20 h-20 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-3xl font-bold">
-                    ✓
-                </div>
-                <span class="text-xs font-bold uppercase tracking-widest text-sage-500">Đặt Hàng Thành Công</span>
-                <h1 class="font-serif text-3xl font-bold text-stone-800">
-                    Cảm Ơn {{ $successOrder->customer_name }} Đã Mua Sắm Tại SHINE Beauty!
-                </h1>
-                <p class="text-sm text-stone-600 leading-relaxed">
-                    Đơn hàng của bạn đã được lưu trực tiếp vào bảng <code>orders</code> trong cơ sở dữ liệu PostgreSQL qua Laravel Eloquent.
-                </p>
+            <div class="bg-white p-8 sm:p-10 rounded-3xl border {{ $isQrOrder && !$isOrderPaid ? 'border-amber-200' : 'border-sage-100' }} shadow-lg space-y-6">
+                @if($isQrOrder && !$isOrderPaid)
+                    <div class="w-20 h-20 mx-auto rounded-full bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center text-3xl font-bold">
+                        ⏳
+                    </div>
+                    <span class="inline-block text-xs font-bold uppercase tracking-widest text-amber-800 bg-amber-100 border border-amber-300 px-3.5 py-1 rounded-full">
+                        Đơn Hàng Chưa Thanh Toán Thành Công
+                    </span>
+                    <h1 class="font-serif text-2xl sm:text-3xl font-bold text-stone-800">
+                        Đơn Hàng #ORDER-{{ $successOrder->id }} — Chưa Thanh Toán Thành Công
+                    </h1>
+                    <p class="text-sm text-stone-600 leading-relaxed">
+                        Đơn hàng của bạn hiện đang ở trạng thái <strong>Đơn hàng chưa thanh toán thành công</strong>. Hệ thống chỉ xác nhận đã thanh toán cho đơn hàng sau khi xác thực đã chuyển khoản thành công qua mã QR bên dưới.
+                    </p>
+                @elseif($isQrOrder && $isOrderPaid)
+                    <div class="w-20 h-20 mx-auto rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center text-3xl font-bold">
+                        ✓
+                    </div>
+                    <span class="inline-block text-xs font-bold uppercase tracking-widest text-emerald-800 bg-emerald-100 border border-emerald-300 px-3.5 py-1 rounded-full">
+                        Đã Xác Thực Chuyển Khoản — Đã Thanh Toán Thành Công
+                    </span>
+                    <h1 class="font-serif text-2xl sm:text-3xl font-bold text-stone-800">
+                        Đã Xác Nhận Thanh Toán Cho Đơn Hàng #ORDER-{{ $successOrder->id }}!
+                    </h1>
+                    <p class="text-sm text-stone-600 leading-relaxed">
+                        Cảm ơn <strong>{{ $successOrder->customer_name }}</strong>! Hệ thống đã xác thực chuyển khoản thành công (Mã GD: <code>{{ $successOrder->transaction_code }}</code>) và xác nhận đơn hàng của bạn.
+                    </p>
+                @else
+                    <div class="w-20 h-20 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-3xl font-bold">
+                        ✓
+                    </div>
+                    <span class="text-xs font-bold uppercase tracking-widest text-sage-500">Đặt Hàng Thành Công</span>
+                    <h1 class="font-serif text-3xl font-bold text-stone-800">
+                        Cảm Ơn {{ $successOrder->customer_name }} Đã Mua Sắm Tại SHINE Beauty!
+                    </h1>
+                    <p class="text-sm text-stone-600 leading-relaxed">
+                        Đơn hàng thanh toán khi nhận hàng (COD) của bạn đã được ghi nhận vào hệ thống và đang chờ Shop xác nhận.
+                    </p>
+                @endif
 
                 <div class="bg-[#F5FAF7] p-5 rounded-2xl border border-sage-100 text-left text-sm space-y-2.5">
                     <div class="flex justify-between gap-4">
@@ -58,6 +88,24 @@
                     <div class="flex justify-between gap-4">
                         <span class="text-stone-500">Phương thức thanh toán:</span>
                         <span class="font-semibold text-stone-800 text-right">{{ $successPaymentLabel }}</span>
+                    </div>
+                    <div class="flex justify-between items-center gap-4">
+                        <span class="text-stone-500">Trạng thái đơn hàng:</span>
+                        <span class="font-semibold text-stone-800 text-right">{{ $successOrder->display_status_label }}</span>
+                    </div>
+                    <div class="flex justify-between items-center gap-4">
+                        <span class="text-stone-500">Trạng thái thanh toán:</span>
+                        @if($isQrOrder && !$isOrderPaid)
+                            <span id="order-payment-status-badge" class="font-bold text-amber-800 bg-amber-100 px-3 py-1 rounded-full border border-amber-300 text-xs">
+                                ⏳ Đơn hàng chưa thanh toán thành công
+                            </span>
+                        @elseif($isQrOrder && $isOrderPaid)
+                            <span id="order-payment-status-badge" class="font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300 text-xs">
+                                ✓ Đã thanh toán cho đơn hàng (Mã GD: {{ $successOrder->transaction_code }})
+                            </span>
+                        @else
+                            <span class="font-semibold text-stone-700 text-xs">Thanh toán khi nhận hàng (COD)</span>
+                        @endif
                     </div>
                     <div class="border-t border-sage-100 pt-2 space-y-1.5">
                         <div class="flex justify-between text-xs text-stone-500">
@@ -165,6 +213,121 @@
                             </div>
                         </div>
                     </div>
+                @endif
+
+                @if($isQrOrder)
+                    @if(!$isOrderPaid)
+                        <!-- KHỐI XÁC THỰC CHUYỂN KHOẢN MÃ QR -->
+                        <div id="qr-verification-box" class="bg-amber-50/70 border-2 border-amber-300 rounded-3xl p-6 text-left space-y-4">
+                            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200 pb-3">
+                                <div>
+                                    <span class="text-[11px] font-bold uppercase tracking-wider text-amber-700 block">
+                                        🔐 Bước Bắt Buộc Để Xác Nhận Thanh Toán
+                                    </span>
+                                    <h3 class="font-serif text-lg font-bold text-stone-800">
+                                        Xác Thực Giao Dịch Chuyển Khoản Mã QR
+                                    </h3>
+                                </div>
+                                <button type="button"
+                                    onclick="checkQrPaymentLive('{{ route('checkout.qr.check', $successOrder) }}')"
+                                    class="px-3.5 py-2 rounded-xl bg-stone-900 hover:bg-sage-600 text-white text-xs font-bold transition cursor-pointer">
+                                    🔄 Kiểm Tra Trạng Thái Chuyển Khoản Tự Động
+                                </button>
+                            </div>
+
+                            <div id="qr-live-check-result" class="hidden text-xs px-4 py-3 rounded-2xl border"></div>
+
+                            <p class="text-xs text-amber-900 leading-relaxed">
+                                Khi chưa xác thực được giao dịch chuyển khoản thành công, đơn hàng này được ghi nhận là <strong>"Đơn hàng chưa thanh toán thành công"</strong>. Sau khi quét mã QR và hoàn tất chuyển tiền, vui lòng nhập thông tin giao dịch từ biên lai để hệ thống đối soát:
+                            </p>
+
+                            <form action="{{ route('checkout.qr.verify', $successOrder) }}" method="POST" class="space-y-3.5 text-xs">
+                                @csrf
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div>
+                                        <label for="verify-tx-code" class="block text-[11px] font-bold text-stone-700 mb-1">
+                                            Mã giao dịch Ngân hàng / MoMo *
+                                        </label>
+                                        <input type="text" id="verify-tx-code" name="transaction_code" required
+                                            value="{{ old('transaction_code') }}"
+                                            placeholder="VD: FT2631988899"
+                                            class="w-full px-3.5 py-2.5 text-xs font-mono font-bold uppercase rounded-xl border border-amber-300 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
+                                    </div>
+                                    <div>
+                                        <label for="verify-transfer-amount" class="block text-[11px] font-bold text-stone-700 mb-1">
+                                            Số tiền đã chuyển khoản (₫) *
+                                        </label>
+                                        <input type="text" id="verify-transfer-amount" name="transfer_amount" required
+                                            value="{{ old('transfer_amount') }}"
+                                            placeholder="VD: {{ $successOrder->total_amount }}"
+                                            class="w-full px-3.5 py-2.5 text-xs font-mono font-bold rounded-xl border border-amber-300 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
+                                    </div>
+                                    <div>
+                                        <label for="verify-transfer-content" class="block text-[11px] font-bold text-stone-700 mb-1">
+                                            Nội dung chuyển khoản *
+                                        </label>
+                                        <input type="text" id="verify-transfer-content" name="transfer_content" required
+                                            value="{{ old('transfer_content') }}"
+                                            placeholder="VD: {{ $orderTransferCode }}"
+                                            class="w-full px-3.5 py-2.5 text-xs font-mono font-bold uppercase rounded-xl border border-amber-300 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <button type="button"
+                                        onclick="fillVerifiedTransferSample('{{ $successOrder->total_amount }}', '{{ $orderTransferCode }}')"
+                                        class="px-3 py-1.5 rounded-lg bg-white hover:bg-amber-100 text-amber-800 border border-amber-300 font-semibold text-[11px] transition cursor-pointer">
+                                        Điền đúng số tiền &amp; nội dung từ QR
+                                    </button>
+                                    <span class="text-[11px] text-stone-500">
+                                        Yêu cầu khớp số tiền <strong>{{ number_format($successOrder->total_amount, 0, ',', '.') }}₫</strong> &amp; nội dung <strong>{{ $orderTransferCode }}</strong>
+                                    </span>
+                                </div>
+
+                                <label class="flex items-start gap-2.5 bg-white p-3 rounded-xl border border-amber-200 cursor-pointer">
+                                    <input type="checkbox" name="confirm_transferred" value="1" required {{ old('confirm_transferred') ? 'checked' : '' }} class="mt-0.5 accent-emerald-600">
+                                    <span class="text-xs text-stone-700 font-medium">
+                                        Tôi xác nhận đã chuyển khoản thành công đúng số tiền và nội dung trên
+                                    </span>
+                                </label>
+
+                                <button type="submit"
+                                    class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-6 rounded-2xl shadow-md transition text-sm cursor-pointer">
+                                    🔐 Xác Thực Đã Chuyển Khoản &amp; Xác Nhận Thanh Toán Cho Đơn Hàng
+                                </button>
+                            </form>
+                        </div>
+                    @else
+                        <!-- BIÊN LAI XÁC THỰC ĐÃ THANH TOÁN -->
+                        <div id="qr-verified-receipt-box" class="bg-emerald-50 border-2 border-emerald-200 rounded-3xl p-6 text-left space-y-3 text-xs">
+                            <div class="flex items-center justify-between border-b border-emerald-200 pb-2.5">
+                                <h3 class="font-serif text-base font-bold text-emerald-900">
+                                    ✓ Biên Lai Đã Xác Thực Thanh Toán Thành Công
+                                </h3>
+                                <span class="text-[11px] font-bold bg-emerald-600 text-white px-3 py-0.5 rounded-full">
+                                    ĐÃ THANH TOÁN
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                <div class="bg-white p-3 rounded-xl border border-emerald-100">
+                                    <span class="text-stone-400 block">Mã giao dịch đã xác thực:</span>
+                                    <strong class="font-mono text-sm text-emerald-700">{{ $successOrder->transaction_code }}</strong>
+                                </div>
+                                <div class="bg-white p-3 rounded-xl border border-emerald-100">
+                                    <span class="text-stone-400 block">Số tiền đã xác thực:</span>
+                                    <strong class="text-sm text-emerald-700">{{ number_format($successOrder->total_amount, 0, ',', '.') }}₫</strong>
+                                </div>
+                                <div class="bg-white p-3 rounded-xl border border-emerald-100">
+                                    <span class="text-stone-400 block">Nội dung đối chiếu:</span>
+                                    <strong class="font-mono text-stone-800">{{ $orderTransferCode }}</strong>
+                                </div>
+                                <div class="bg-white p-3 rounded-xl border border-emerald-100">
+                                    <span class="text-stone-400 block">Thời gian xác thực:</span>
+                                    <strong class="text-stone-800">{{ $successOrder->paid_at?->format('d/m/Y H:i:s') ?? now()->format('d/m/Y H:i:s') }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 @endif
 
                 <div class="flex flex-wrap justify-center gap-4 pt-2">
@@ -290,72 +453,18 @@
                         </div>
                     </div>
 
-                    <!-- Địa chỉ giao hàng: Bản đồ tương tác + Select Option Tỉnh/TP - Quận/Huyện - Phường/Xã + Input Số nhà, tên đường -->
-                    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-                    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-stone-600 mb-2">Ghi chú đơn hàng (Tùy chọn)</label>
+                        <textarea name="note" rows="2" placeholder="Ghi chú giao giờ hành chính hoặc gói quà tặng..." class="w-full px-4 py-3 text-sm rounded-2xl border border-sage-200 bg-[#F5FAF7] focus:bg-white focus:outline-none focus:ring-2 focus:ring-sage-300">{{ old('note') }}</textarea>
+                    </div>
 
+                    <!-- Địa chỉ giao hàng: Nhập địa chỉ bằng tay (Tỉnh/TP - Quận/Huyện - Phường/Xã + Số nhà, tên đường) -->
                     <div class="p-4 sm:p-5 rounded-3xl bg-[#F5FAF7] border border-sage-200/80 space-y-4">
                         <div class="flex flex-wrap items-center justify-between gap-2">
                             <label class="block text-xs font-bold uppercase tracking-wider text-sage-700">
                                 📍 Địa Chỉ Giao Hàng Chi Tiết *
                             </label>
-                            <span class="text-[11px] text-stone-500">Chọn vị trí trên bản đồ hoặc chọn Tỉnh/Quận/Phường bên dưới</span>
-                        </div>
-
-                        <!-- BẢN ĐỒ CHỌN NHANH VỊ TRÍ GIAO HÀNG (KHÔNG CẦN NHẬP RƯỜM RÀ) -->
-                        <div class="bg-white rounded-2xl border border-sage-200 p-3.5 space-y-3 shadow-2xs">
-                            <div class="flex flex-wrap items-center justify-between gap-2">
-                                <div>
-                                    <span class="text-xs font-bold text-stone-800 flex items-center gap-1.5">
-                                        🗺️ Chọn Nhanh Vị Trí Trên Bản Đồ
-                                    </span>
-                                    <p class="text-[11px] text-stone-500">
-                                        Chạm vào bản đồ hoặc kéo ghim đỏ để hệ thống <strong>tự động điền Tỉnh/TP, Quận/Huyện, Phường/Xã & Số nhà tên đường</strong>.
-                                    </p>
-                                </div>
-                                <button type="button" id="btn-locate-me" onclick="locateMyCurrentPosition()"
-                                    class="inline-flex items-center gap-1.5 bg-sage-500 hover:bg-sage-600 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition shadow-xs cursor-pointer">
-                                    📍 Lấy vị trí hiện tại (GPS)
-                                </button>
-                            </div>
-
-                            <!-- Thanh tìm kiếm nhanh địa điểm trên bản đồ -->
-                            <div class="flex gap-2">
-                                <input type="text" id="map-search-input"
-                                    placeholder="🔍 Tìm nhanh đường phố, tòa nhà, địa điểm trên bản đồ (VD: 28 Phạm Văn Chiêu, Gò Vấp)..."
-                                    onkeydown="if(event.key==='Enter'){event.preventDefault();searchLocationOnMap();}"
-                                    class="flex-1 px-3.5 py-2 text-xs rounded-xl border border-sage-200 bg-[#F5FAF7] focus:bg-white focus:outline-none focus:ring-2 focus:ring-sage-300">
-                                <button type="button" onclick="searchLocationOnMap()"
-                                    class="bg-stone-900 hover:bg-sage-600 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer flex-shrink-0">
-                                    Tìm trên bản đồ
-                                </button>
-                            </div>
-
-                            <!-- Nút nhảy nhanh để test các Khu vực tính phí vận chuyển -->
-                            <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
-                                <span class="text-stone-500 font-semibold">Test nhanh khu vực ship:</span>
-                                <button type="button" onclick="quickSelectTestLocation('TP. Hồ Chí Minh', 'Quận 1', 'Phường Bến Thành', 10.7769, 106.7009)" class="px-2.5 py-1 rounded-full bg-sage-50 hover:bg-sage-100 text-sage-700 border border-sage-200 font-medium cursor-pointer">
-                                    🏙️ Nội thành TP.HCM (15.000₫)
-                                </button>
-                                <button type="button" onclick="quickSelectTestLocation('TP. Hồ Chí Minh', 'Huyện Củ Chi', 'Thị trấn Củ Chi', 10.9733, 106.4933)" class="px-2.5 py-1 rounded-full bg-sage-50 hover:bg-sage-100 text-sage-700 border border-sage-200 font-medium cursor-pointer">
-                                    🏘️ Ngoại thành Huyện Củ Chi (Zone: 25k | Flat: 35k)
-                                </button>
-                                <button type="button" onclick="quickSelectTestLocation('Thành phố Đà Nẵng', 'Quận Hải Châu', 'Phường Hải Châu I', 16.0544, 108.2022)" class="px-2.5 py-1 rounded-full bg-sage-50 hover:bg-sage-100 text-sage-700 border border-sage-200 font-medium cursor-pointer">
-                                    🚛 Liên tỉnh Đà Nẵng (35.000₫)
-                                </button>
-                                <button type="button" onclick="quickSelectTestLocation('Tỉnh Lào Cai', 'Thị xã Sa Pa', 'Phường Sa Pa', 22.3364, 103.8438)" class="px-2.5 py-1 rounded-full bg-sage-50 hover:bg-sage-100 text-sage-700 border border-sage-200 font-medium cursor-pointer">
-                                    ⛰️ Vùng sâu vùng xa Lào Cai (Zone: 50k | Flat: 35k)
-                                </button>
-                            </div>
-
-                            <!-- Khung hiển thị bản đồ tương tác -->
-                            <div class="relative rounded-2xl overflow-hidden border border-sage-200">
-                                <div id="shipping-map" class="w-full h-64 sm:h-72 z-10 bg-sage-50"></div>
-                                <div id="map-status-badge" class="hidden text-[11px] font-medium px-3 py-1.5 bg-emerald-50 text-emerald-800 border-t border-emerald-200 flex items-center justify-between">
-                                    <span id="map-status-text">✓ Đã chọn vị trí trên bản đồ</span>
-                                    <span id="map-coords-text" class="font-mono text-[10px] text-emerald-600"></span>
-                                </div>
-                            </div>
+                            <span class="text-[11px] text-stone-500">Chọn Tỉnh/Quận/Phường và nhập số nhà, tên đường</span>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -386,10 +495,10 @@
 
                         <div>
                             <label for="input-street" class="block text-[11px] font-semibold text-stone-600 mb-1.5">
-                                Số nhà, tên đường, tòa nhà / hẻm (Tự động điền từ bản đồ hoặc tự nhập) *
+                                Số nhà, tên đường, tòa nhà / hẻm *
                             </label>
                             <input type="text" id="input-street" name="street_address" required value="{{ old('street_address', $defaultAddress->street_address ?? ($defaultAddress->address ?? (auth()->user()->address ?? ''))) }}"
-                                placeholder="VD: Số 28 Phạm Văn Chiêu (hoặc bấm vào bản đồ để tự động điền)"
+                                placeholder="VD: Số 28 Phạm Văn Chiêu"
                                 class="w-full px-4 py-3 text-sm rounded-2xl border border-sage-200 bg-white focus:outline-none focus:ring-2 focus:ring-sage-300">
                         </div>
 
@@ -398,7 +507,7 @@
                         <div class="text-xs text-stone-600 bg-white/90 px-3.5 py-2.5 rounded-2xl border border-sage-100 flex items-start gap-2">
                             <span class="text-sage-600 font-bold flex-shrink-0">Giao đến:</span>
                             <span id="address-preview-text" class="font-medium text-stone-800">
-                                {{ old('address', $defaultAddress->address ?? (auth()->user()->address ?? 'Chạm vào bản đồ phía trên hoặc chọn Tỉnh/TP, Quận/Huyện, Phường/Xã.')) }}
+                                {{ old('address', $defaultAddress->address ?? (auth()->user()->address ?? 'Chọn Tỉnh/TP, Quận/Huyện, Phường/Xã và nhập số nhà, tên đường.')) }}
                             </span>
                         </div>
 
@@ -446,212 +555,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-stone-600 mb-2">Ghi chú đơn hàng (Tùy chọn)</label>
-                        <textarea name="note" rows="2" placeholder="Ghi chú giao giờ hành chính hoặc gói quà tặng..." class="w-full px-4 py-3 text-sm rounded-2xl border border-sage-200 bg-[#F5FAF7] focus:bg-white focus:outline-none focus:ring-2 focus:ring-sage-300">{{ old('note') }}</textarea>
-                    </div>
-
-                    <h2 class="font-serif text-xl font-bold text-stone-800 pt-2 pb-3 border-b border-sage-100">
-                        2. Phương Thức Thanh Toán
-                    </h2>
-
-                    <!-- 3 Payment Options: COD, Bank QR, MoMo QR -->
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                        <label data-payment-card="COD" class="p-4 rounded-2xl border-2 transition flex items-start gap-3 cursor-pointer {{ $selectedPaymentMethod === 'COD' ? 'border-sage-500 bg-sage-50/70 shadow-xs' : 'border-sage-200 bg-[#F5FAF7] hover:bg-sage-50/40' }}">
-                            <input type="radio" name="payment_method" value="COD" {{ $selectedPaymentMethod === 'COD' ? 'checked' : '' }} onchange="switchPaymentMethod('COD')" class="mt-1 accent-sage-500">
-                            <div>
-                                <p class="text-sm font-bold text-stone-800">💵 Thanh toán COD</p>
-                                <p class="text-[11px] text-stone-500 mt-0.5 leading-snug">Kiểm tra tem niêm phong khi nhận hàng rồi thanh toán</p>
-                            </div>
-                        </label>
-
-                        <label data-payment-card="BANK_TRANSFER" class="p-4 rounded-2xl border-2 transition flex items-start gap-3 cursor-pointer {{ $selectedPaymentMethod === 'BANK_TRANSFER' ? 'border-blue-500 bg-blue-50/50 shadow-xs' : 'border-sage-200 bg-[#F5FAF7] hover:bg-sage-50/40' }}">
-                            <input type="radio" name="payment_method" value="BANK_TRANSFER" {{ $selectedPaymentMethod === 'BANK_TRANSFER' ? 'checked' : '' }} onchange="switchPaymentMethod('BANK_TRANSFER')" class="mt-1 accent-blue-600">
-                            <div>
-                                <p class="text-sm font-bold text-stone-800">🏦 Mã QR Ngân Hàng</p>
-                                <p class="text-[11px] text-stone-500 mt-0.5 leading-snug">Quét mã VietQR 24/7 tự động điền số tiền & nội dung</p>
-                            </div>
-                        </label>
-
-                        <label data-payment-card="MOMO_QR" class="p-4 rounded-2xl border-2 transition flex items-start gap-3 cursor-pointer {{ $selectedPaymentMethod === 'MOMO_QR' ? 'border-[#A50064] bg-pink-50/50 shadow-xs' : 'border-sage-200 bg-[#F5FAF7] hover:bg-sage-50/40' }}">
-                            <input type="radio" name="payment_method" value="MOMO_QR" {{ $selectedPaymentMethod === 'MOMO_QR' ? 'checked' : '' }} onchange="switchPaymentMethod('MOMO_QR')" class="mt-1 accent-[#A50064]">
-                            <div>
-                                <p class="text-sm font-bold text-stone-800">📱 Mã QR Ví MoMo</p>
-                                <p class="text-[11px] text-stone-500 mt-0.5 leading-snug">Quét mã QR bằng ứng dụng Ví điện tử MoMo tức thì</p>
-                            </div>
-                        </label>
-                    </div>
-
-                    <!-- PANEL A: BANK QR CODE (VietQR) -->
-                    <div id="payment-panel-bank" class="{{ $selectedPaymentMethod === 'BANK_TRANSFER' ? 'block' : 'hidden' }} rounded-3xl border-2 border-blue-200 bg-gradient-to-br from-blue-50/70 via-white to-blue-50/40 p-5 sm:p-6 space-y-4">
-                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-blue-100 pb-3">
-                            <div>
-                                <span class="text-[10px] font-bold uppercase tracking-widest text-blue-600 block">Chuyển Khoản Nhanh 24/7 (VietQR Napas)</span>
-                                <h3 class="font-serif text-lg font-bold text-stone-800">Quét Mã QR Ngân Hàng Để Thanh Toán</h3>
-                            </div>
-                            <!-- Cho phép đổi ngân hàng nhận nếu khách muốn -->
-                            <div class="inline-flex rounded-xl bg-white p-1 border border-blue-200 text-xs font-semibold">
-                                <button type="button" onclick="selectBankAccount('VCB', 'Vietcombank (VCB)', '1029384756', 'SHINE BEAUTY COSMETICS', this)"
-                                    class="bank-tab-btn px-2.5 py-1 rounded-lg bg-blue-600 text-white transition">
-                                    Vietcombank
-                                </button>
-                                <button type="button" onclick="selectBankAccount('MB', 'MB Bank (Quân Đội)', '8888686899', 'SHINE BEAUTY COSMETICS', this)"
-                                    class="bank-tab-btn px-2.5 py-1 rounded-lg text-stone-600 hover:text-blue-600 transition">
-                                    MB Bank
-                                </button>
-                                <button type="button" onclick="selectBankAccount('TCB', 'Techcombank (TCB)', '19038889996868', 'SHINE BEAUTY COSMETICS', this)"
-                                    class="bank-tab-btn px-2.5 py-1 rounded-lg text-stone-600 hover:text-blue-600 transition">
-                                    Techcombank
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
-                            <!-- QR Image Box -->
-                            <div class="sm:col-span-5 flex flex-col items-center justify-center bg-white p-4 rounded-2xl border border-blue-200 shadow-xs">
-                                <img id="bank-qr-img"
-                                     src="https://img.vietqr.io/image/VCB-1029384756-compact2.png?amount={{ $totalAmount }}&addInfo={{ urlencode('SHINE ' . (old('phone', auth()->user()->phone ?? 'THANHTOAN'))) }}&accountName={{ urlencode('SHINE BEAUTY COSMETICS') }}"
-                                     onerror="this.onerror=null;this.src='https://api.qrserver.com/v1/create-qr-code/?size=250x250&margin=8&data=' + encodeURIComponent('BANK:VCB|ACC:1029384756|NAME:SHINE BEAUTY COSMETICS|AMOUNT:{{ $totalAmount }}');"
-                                     alt="Mã QR Chuyển Khoản Ngân Hàng"
-                                     class="w-48 h-48 object-contain rounded-xl">
-                                <p class="text-[11px] font-semibold text-blue-700 mt-2 text-center">
-                                    📷 Mở App Ngân hàng bất kỳ để quét mã
-                                </p>
-                            </div>
-
-                            <!-- Bank Info Details -->
-                            <div class="sm:col-span-7 space-y-2.5 text-xs">
-                                <div class="bg-white p-3 rounded-2xl border border-blue-100">
-                                    <span class="text-stone-400 block">Ngân hàng thụ hưởng:</span>
-                                    <strong id="bank-info-name" class="text-stone-800 text-sm">Vietcombank (VCB)</strong>
-                                </div>
-
-                                <div class="bg-white p-3 rounded-2xl border border-blue-100 flex items-center justify-between gap-2">
-                                    <div>
-                                        <span class="text-stone-400 block">Số tài khoản nhận:</span>
-                                        <strong id="bank-info-acc" class="font-mono text-base text-blue-700">1029384756</strong>
-                                        <span id="bank-info-owner" class="block text-[11px] text-stone-500 font-medium">Chủ TK: SHINE BEAUTY COSMETICS</span>
-                                    </div>
-                                    <button type="button" onclick="copyText(document.getElementById('bank-info-acc').textContent, this)"
-                                        class="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] flex-shrink-0">
-                                        Sao chép STK
-                                    </button>
-                                </div>
-
-                                <div class="bg-white p-3 rounded-2xl border border-blue-100 flex items-center justify-between gap-2">
-                                    <div>
-                                        <span class="text-stone-400 block">Số tiền cần chuyển:</span>
-                                        <strong class="text-base text-emerald-600">{{ number_format($totalAmount, 0, ',', '.') }}₫</strong>
-                                    </div>
-                                    <button type="button" onclick="copyText('{{ $totalAmount }}', this)"
-                                        class="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px] flex-shrink-0">
-                                        Chép số tiền
-                                    </button>
-                                </div>
-
-                                <div class="bg-white p-3 rounded-2xl border border-blue-100 flex items-center justify-between gap-2">
-                                    <div>
-                                        <span class="text-stone-400 block">Nội dung chuyển khoản:</span>
-                                        <strong id="bank-transfer-note" class="font-mono text-sm text-stone-900">SHINE {{ preg_replace('/\s+/', '', old('phone', auth()->user()->phone ?? 'SDT')) }}</strong>
-                                    </div>
-                                    <button type="button" onclick="copyText(document.getElementById('bank-transfer-note').textContent, this)"
-                                        class="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] flex-shrink-0">
-                                        Chép nội dung
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <p class="text-[11px] text-blue-800 bg-blue-100/70 px-3.5 py-2 rounded-xl">
-                            💡 <strong>Hướng dẫn:</strong> Quét mã QR bên trên để tự động điền đúng số tiền <strong>{{ number_format($totalAmount, 0, ',', '.') }}₫</strong> và nội dung chuyển khoản, sau đó bấm nút <strong>"Hoàn Tất Đặt Hàng"</strong> bên dưới.
-                        </p>
-                    </div>
-
-                    <!-- PANEL B: MOMO QR CODE -->
-                    <div id="payment-panel-momo" class="{{ $selectedPaymentMethod === 'MOMO_QR' ? 'block' : 'hidden' }} rounded-3xl border-2 border-pink-300 bg-gradient-to-br from-[#FDF2F8] via-white to-pink-50/60 p-5 sm:p-6 space-y-4">
-                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-pink-200 pb-3">
-                            <div class="flex items-center gap-2.5">
-                                <div class="w-9 h-9 rounded-xl bg-[#A50064] text-white font-bold flex items-center justify-center text-xs shadow-xs">
-                                    MoMo
-                                </div>
-                                <div>
-                                    <span class="text-[10px] font-bold uppercase tracking-widest text-[#A50064] block">Thanh Toán Ví Điện Tử MoMo</span>
-                                    <h3 class="font-serif text-lg font-bold text-stone-800">Quét Mã QR MoMo Để Thanh Toán</h3>
-                                </div>
-                            </div>
-                            <span class="text-xs font-bold bg-[#A50064] text-white px-3 py-1 rounded-full">Xác Nhận Tức Thì</span>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
-                            <!-- MoMo QR Image Box -->
-                            <div class="sm:col-span-5 flex flex-col items-center justify-center bg-white p-4 rounded-2xl border-2 border-pink-200 shadow-xs">
-                                <div class="relative p-2 rounded-2xl bg-white border border-pink-100">
-                                    <img id="momo-qr-img"
-                                         src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&color=A50064&bgcolor=FFFFFF&margin=6&data={{ urlencode('2|99|0901000888|SHINE BEAUTY COSMETICS|admin@luminabeauty.vn|0|0|' . $totalAmount . '|SHINE ' . preg_replace('/\s+/', '', old('phone', auth()->user()->phone ?? 'SDT')) . '|transfer_myqr') }}"
-                                         alt="Mã QR Ví MoMo"
-                                         class="w-44 h-44 object-contain rounded-xl">
-                                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                        <span class="bg-[#A50064] text-white text-[10px] font-extrabold px-2 py-1 rounded-lg shadow-sm border-2 border-white">
-                                            MoMo
-                                        </span>
-                                    </div>
-                                </div>
-                                <p class="text-[11px] font-semibold text-[#A50064] mt-2 text-center">
-                                    📱 Mở ứng dụng MoMo → Chọn "Quét Mã"
-                                </p>
-                            </div>
-
-                            <!-- MoMo Wallet Details -->
-                            <div class="sm:col-span-7 space-y-2.5 text-xs">
-                                <div class="bg-white p-3 rounded-2xl border border-pink-100">
-                                    <span class="text-stone-400 block">Chủ tài khoản Ví MoMo:</span>
-                                    <strong class="text-stone-800 text-sm">SHINE BEAUTY COSMETICS</strong>
-                                </div>
-
-                                <div class="bg-white p-3 rounded-2xl border border-pink-100 flex items-center justify-between gap-2">
-                                    <div>
-                                        <span class="text-stone-400 block">Số điện thoại nhận tiền MoMo:</span>
-                                        <strong id="momo-phone-acc" class="font-mono text-base text-[#A50064]">0901000888</strong>
-                                    </div>
-                                    <button type="button" onclick="copyText('0901000888', this)"
-                                        class="px-3 py-1.5 rounded-xl bg-pink-50 hover:bg-pink-100 text-[#A50064] font-bold text-[11px] flex-shrink-0">
-                                        Sao chép SĐT
-                                    </button>
-                                </div>
-
-                                <div class="bg-white p-3 rounded-2xl border border-pink-100 flex items-center justify-between gap-2">
-                                    <div>
-                                        <span class="text-stone-400 block">Số tiền thanh toán:</span>
-                                        <strong class="text-base text-[#A50064]">{{ number_format($totalAmount, 0, ',', '.') }}₫</strong>
-                                    </div>
-                                    <button type="button" onclick="copyText('{{ $totalAmount }}', this)"
-                                        class="px-3 py-1.5 rounded-xl bg-pink-50 hover:bg-pink-100 text-[#A50064] font-bold text-[11px] flex-shrink-0">
-                                        Chép số tiền
-                                    </button>
-                                </div>
-
-                                <div class="bg-white p-3 rounded-2xl border border-pink-100 flex items-center justify-between gap-2">
-                                    <div>
-                                        <span class="text-stone-400 block">Lời nhắn chuyển tiền MoMo:</span>
-                                        <strong id="momo-transfer-note" class="font-mono text-sm text-stone-900">SHINE {{ preg_replace('/\s+/', '', old('phone', auth()->user()->phone ?? 'SDT')) }}</strong>
-                                    </div>
-                                    <button type="button" onclick="copyText(document.getElementById('momo-transfer-note').textContent, this)"
-                                        class="px-3 py-1.5 rounded-xl bg-pink-50 hover:bg-pink-100 text-[#A50064] font-bold text-[11px] flex-shrink-0">
-                                        Chép lời nhắn
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <p class="text-[11px] text-[#A50064] bg-pink-100/70 px-3.5 py-2 rounded-xl">
-                            💡 <strong>Hướng dẫn:</strong> Mở Ví MoMo trên điện thoại, quét mã QR để chuyển <strong>{{ number_format($totalAmount, 0, ',', '.') }}₫</strong> kèm lời nhắn, sau đó nhấn <strong>"Hoàn Tất Đặt Hàng"</strong>.
-                        </p>
-                    </div>
-
-                    <button type="submit" id="checkout-submit-btn" class="w-full bg-sage-500 hover:bg-sage-600 text-white font-semibold py-4 px-8 rounded-full shadow-lg shadow-sage-200 transition text-base cursor-pointer">
-                        Hoàn Tất Đặt Hàng (<span id="submit-btn-total-text">{{ number_format($totalAmount, 0, ',', '.') }}₫</span>)
-                    </button>
                 </form>
 
                 <!-- Cart Summary -->
@@ -832,6 +735,210 @@
                                 <span id="summary-total-amount-text" class="text-sage-600">{{ number_format($totalAmount, 0, ',', '.') }}₫</span>
                             </div>
                         </div>
+
+                        <!-- Phương Thức Thanh Toán & Hoàn Tất Đặt Hàng (Cột phải sau Tổng thanh toán) -->
+                        <div class="pt-4 border-t border-sage-100 space-y-4">
+                            <h2 class="font-serif text-xl font-bold text-stone-800">
+                                2. Phương Thức Thanh Toán
+                            </h2>
+
+                            <!-- 3 Payment Options: COD, Bank QR, MoMo QR -->
+                            <div class="grid grid-cols-1 gap-3">
+                                <label data-payment-card="COD" class="p-4 rounded-2xl border-2 transition flex items-start gap-3 cursor-pointer {{ $selectedPaymentMethod === 'COD' ? 'border-sage-500 bg-sage-50/70 shadow-xs' : 'border-sage-200 bg-[#F5FAF7] hover:bg-sage-50/40' }}">
+                                    <input type="radio" name="payment_method" value="COD" form="checkout-form" {{ $selectedPaymentMethod === 'COD' ? 'checked' : '' }} onchange="switchPaymentMethod('COD')" class="mt-1 accent-sage-500">
+                                    <div>
+                                        <p class="text-sm font-bold text-stone-800">💵 Thanh toán COD</p>
+                                        <p class="text-[11px] text-stone-500 mt-0.5 leading-snug">Kiểm tra tem niêm phong khi nhận hàng rồi thanh toán</p>
+                                    </div>
+                                </label>
+
+                                <label data-payment-card="BANK_TRANSFER" class="p-4 rounded-2xl border-2 transition flex items-start gap-3 cursor-pointer {{ $selectedPaymentMethod === 'BANK_TRANSFER' ? 'border-blue-500 bg-blue-50/50 shadow-xs' : 'border-sage-200 bg-[#F5FAF7] hover:bg-sage-50/40' }}">
+                                    <input type="radio" name="payment_method" value="BANK_TRANSFER" form="checkout-form" {{ $selectedPaymentMethod === 'BANK_TRANSFER' ? 'checked' : '' }} onchange="switchPaymentMethod('BANK_TRANSFER')" class="mt-1 accent-blue-600">
+                                    <div>
+                                        <p class="text-sm font-bold text-stone-800">🏦 Mã QR Ngân Hàng</p>
+                                        <p class="text-[11px] text-stone-500 mt-0.5 leading-snug">Quét mã VietQR 24/7 tự động điền số tiền & nội dung</p>
+                                    </div>
+                                </label>
+
+                                <label data-payment-card="MOMO_QR" class="p-4 rounded-2xl border-2 transition flex items-start gap-3 cursor-pointer {{ $selectedPaymentMethod === 'MOMO_QR' ? 'border-[#A50064] bg-pink-50/50 shadow-xs' : 'border-sage-200 bg-[#F5FAF7] hover:bg-sage-50/40' }}">
+                                    <input type="radio" name="payment_method" value="MOMO_QR" form="checkout-form" {{ $selectedPaymentMethod === 'MOMO_QR' ? 'checked' : '' }} onchange="switchPaymentMethod('MOMO_QR')" class="mt-1 accent-[#A50064]">
+                                    <div>
+                                        <p class="text-sm font-bold text-stone-800">📱 Mã QR Ví MoMo</p>
+                                        <p class="text-[11px] text-stone-500 mt-0.5 leading-snug">Quét mã QR bằng ứng dụng Ví điện tử MoMo tức thì</p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- PANEL A: BANK QR CODE (VietQR) -->
+                            <div id="payment-panel-bank" class="{{ $selectedPaymentMethod === 'BANK_TRANSFER' ? 'block' : 'hidden' }} rounded-3xl border-2 border-blue-200 bg-gradient-to-br from-blue-50/70 via-white to-blue-50/40 p-4 sm:p-5 space-y-4">
+                                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-blue-100 pb-3">
+                                    <div>
+                                        <span class="text-[10px] font-bold uppercase tracking-widest text-blue-600 block">Chuyển Khoản Nhanh 24/7 (VietQR Napas)</span>
+                                        <h3 class="font-serif text-base font-bold text-stone-800">Quét Mã QR Ngân Hàng Để Thanh Toán</h3>
+                                    </div>
+                                    <!-- Cho phép đổi ngân hàng nhận nếu khách muốn -->
+                                    <div class="inline-flex rounded-xl bg-white p-1 border border-blue-200 text-xs font-semibold">
+                                        <button type="button" onclick="selectBankAccount('VCB', 'Vietcombank (VCB)', '1029384756', 'SHINE BEAUTY COSMETICS', this)"
+                                            class="bank-tab-btn px-2.5 py-1 rounded-lg bg-blue-600 text-white transition">
+                                            Vietcombank
+                                        </button>
+                                        <button type="button" onclick="selectBankAccount('MB', 'MB Bank (Quân Đội)', '8888686899', 'SHINE BEAUTY COSMETICS', this)"
+                                            class="bank-tab-btn px-2.5 py-1 rounded-lg text-stone-600 hover:text-blue-600 transition">
+                                            MB Bank
+                                        </button>
+                                        <button type="button" onclick="selectBankAccount('TCB', 'Techcombank (TCB)', '19038889996868', 'SHINE BEAUTY COSMETICS', this)"
+                                            class="bank-tab-btn px-2.5 py-1 rounded-lg text-stone-600 hover:text-blue-600 transition">
+                                            Techcombank
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 gap-4 items-center">
+                                    <!-- QR Image Box -->
+                                    <div class="flex flex-col items-center justify-center bg-white p-4 rounded-2xl border border-blue-200 shadow-xs">
+                                        <img id="bank-qr-img"
+                                             src="https://img.vietqr.io/image/VCB-1029384756-compact2.png?amount={{ $totalAmount }}&addInfo={{ urlencode('SHINE ' . (old('phone', auth()->user()->phone ?? 'THANHTOAN'))) }}&accountName={{ urlencode('SHINE BEAUTY COSMETICS') }}"
+                                             onerror="this.onerror=null;this.src='https://api.qrserver.com/v1/create-qr-code/?size=250x250&margin=8&data=' + encodeURIComponent('BANK:VCB|ACC:1029384756|NAME:SHINE BEAUTY COSMETICS|AMOUNT:{{ $totalAmount }}');"
+                                             alt="Mã QR Chuyển Khoản Ngân Hàng"
+                                             class="w-48 h-48 object-contain rounded-xl">
+                                        <p class="text-[11px] font-semibold text-blue-700 mt-2 text-center">
+                                            📷 Mở App Ngân hàng bất kỳ để quét mã
+                                        </p>
+                                    </div>
+
+                                    <!-- Bank Info Details -->
+                                    <div class="space-y-2.5 text-xs">
+                                        <div class="bg-white p-3 rounded-2xl border border-blue-100">
+                                            <span class="text-stone-400 block">Ngân hàng thụ hưởng:</span>
+                                            <strong id="bank-info-name" class="text-stone-800 text-sm">Vietcombank (VCB)</strong>
+                                        </div>
+
+                                        <div class="bg-white p-3 rounded-2xl border border-blue-100 flex items-center justify-between gap-2">
+                                            <div>
+                                                <span class="text-stone-400 block">Số tài khoản nhận:</span>
+                                                <strong id="bank-info-acc" class="font-mono text-base text-blue-700">1029384756</strong>
+                                                <span id="bank-info-owner" class="block text-[11px] text-stone-500 font-medium">Chủ TK: SHINE BEAUTY COSMETICS</span>
+                                            </div>
+                                            <button type="button" onclick="copyText(document.getElementById('bank-info-acc').textContent, this)"
+                                                class="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] flex-shrink-0">
+                                                Sao chép STK
+                                            </button>
+                                        </div>
+
+                                        <div class="bg-white p-3 rounded-2xl border border-blue-100 flex items-center justify-between gap-2">
+                                            <div>
+                                                <span class="text-stone-400 block">Số tiền cần chuyển:</span>
+                                                <strong id="bank-qr-amount-text" class="text-base text-emerald-600">{{ number_format($totalAmount, 0, ',', '.') }}₫</strong>
+                                            </div>
+                                            <button type="button" onclick="copyText(String(checkoutTotalAmount), this)"
+                                                class="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px] flex-shrink-0">
+                                                Chép số tiền
+                                            </button>
+                                        </div>
+
+                                        <div class="bg-white p-3 rounded-2xl border border-blue-100 flex items-center justify-between gap-2">
+                                            <div>
+                                                <span class="text-stone-400 block">Nội dung chuyển khoản:</span>
+                                                <strong id="bank-transfer-note" class="font-mono text-sm text-stone-900">SHINE {{ preg_replace('/\s+/', '', old('phone', auth()->user()->phone ?? 'SDT')) }}</strong>
+                                            </div>
+                                            <button type="button" onclick="copyText(document.getElementById('bank-transfer-note').textContent, this)"
+                                                class="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] flex-shrink-0">
+                                                Chép nội dung
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <p class="text-[11px] text-blue-800 bg-blue-100/70 px-3.5 py-2 rounded-xl">
+                                    💡 <strong>Lưu ý xác thực:</strong> Sau khi bấm <strong>"Hoàn Tất Đặt Hàng"</strong>, đơn hàng sẽ ở trạng thái <strong>Đơn hàng chưa thanh toán thành công</strong> cho đến khi hệ thống xác thực bạn đã chuyển khoản đúng số tiền qua mã QR.
+                                </p>
+                            </div>
+
+                            <!-- PANEL B: MOMO QR CODE -->
+                            <div id="payment-panel-momo" class="{{ $selectedPaymentMethod === 'MOMO_QR' ? 'block' : 'hidden' }} rounded-3xl border-2 border-pink-300 bg-gradient-to-br from-[#FDF2F8] via-white to-pink-50/60 p-4 sm:p-5 space-y-4">
+                                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-pink-200 pb-3">
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="w-9 h-9 rounded-xl bg-[#A50064] text-white font-bold flex items-center justify-center text-xs shadow-xs">
+                                            MoMo
+                                        </div>
+                                        <div>
+                                            <span class="text-[10px] font-bold uppercase tracking-widest text-[#A50064] block">Thanh Toán Ví Điện Tử MoMo</span>
+                                            <h3 class="font-serif text-base font-bold text-stone-800">Quét Mã QR MoMo Để Thanh Toán</h3>
+                                        </div>
+                                    </div>
+                                    <span class="text-xs font-bold bg-[#A50064] text-white px-3 py-1 rounded-full">Cần Xác Thực Chuyển Khoản</span>
+                                </div>
+
+                                <div class="grid grid-cols-1 gap-4 items-center">
+                                    <!-- MoMo QR Image Box -->
+                                    <div class="flex flex-col items-center justify-center bg-white p-4 rounded-2xl border-2 border-pink-200 shadow-xs">
+                                        <div class="relative p-2 rounded-2xl bg-white border border-pink-100">
+                                            <img id="momo-qr-img"
+                                                 src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&color=A50064&bgcolor=FFFFFF&margin=6&data={{ urlencode('2|99|0901000888|SHINE BEAUTY COSMETICS|admin@luminabeauty.vn|0|0|' . $totalAmount . '|SHINE ' . preg_replace('/\s+/', '', old('phone', auth()->user()->phone ?? 'SDT')) . '|transfer_myqr') }}"
+                                                 alt="Mã QR Ví MoMo"
+                                                 class="w-44 h-44 object-contain rounded-xl">
+                                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                <span class="bg-[#A50064] text-white text-[10px] font-extrabold px-2 py-1 rounded-lg shadow-sm border-2 border-white">
+                                                    MoMo
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <p class="text-[11px] font-semibold text-[#A50064] mt-2 text-center">
+                                            📱 Mở ứng dụng MoMo → Chọn "Quét Mã"
+                                        </p>
+                                    </div>
+
+                                    <!-- MoMo Wallet Details -->
+                                    <div class="space-y-2.5 text-xs">
+                                        <div class="bg-white p-3 rounded-2xl border border-pink-100">
+                                            <span class="text-stone-400 block">Chủ tài khoản Ví MoMo:</span>
+                                            <strong class="text-stone-800 text-sm">SHINE BEAUTY COSMETICS</strong>
+                                        </div>
+
+                                        <div class="bg-white p-3 rounded-2xl border border-pink-100 flex items-center justify-between gap-2">
+                                            <div>
+                                                <span class="text-stone-400 block">Số điện thoại nhận tiền MoMo:</span>
+                                                <strong id="momo-phone-acc" class="font-mono text-base text-[#A50064]">0901000888</strong>
+                                            </div>
+                                            <button type="button" onclick="copyText('0901000888', this)"
+                                                class="px-3 py-1.5 rounded-xl bg-pink-50 hover:bg-pink-100 text-[#A50064] font-bold text-[11px] flex-shrink-0">
+                                                Sao chép SĐT
+                                            </button>
+                                        </div>
+
+                                        <div class="bg-white p-3 rounded-2xl border border-pink-100 flex items-center justify-between gap-2">
+                                            <div>
+                                                <span class="text-stone-400 block">Số tiền thanh toán:</span>
+                                                <strong id="momo-qr-amount-text" class="text-base text-[#A50064]">{{ number_format($totalAmount, 0, ',', '.') }}₫</strong>
+                                            </div>
+                                            <button type="button" onclick="copyText(String(checkoutTotalAmount), this)"
+                                                class="px-3 py-1.5 rounded-xl bg-pink-50 hover:bg-pink-100 text-[#A50064] font-bold text-[11px] flex-shrink-0">
+                                                Chép số tiền
+                                            </button>
+                                        </div>
+
+                                        <div class="bg-white p-3 rounded-2xl border border-pink-100 flex items-center justify-between gap-2">
+                                            <div>
+                                                <span class="text-stone-400 block">Lời nhắn chuyển tiền MoMo:</span>
+                                                <strong id="momo-transfer-note" class="font-mono text-sm text-stone-900">SHINE {{ preg_replace('/\s+/', '', old('phone', auth()->user()->phone ?? 'SDT')) }}</strong>
+                                            </div>
+                                            <button type="button" onclick="copyText(document.getElementById('momo-transfer-note').textContent, this)"
+                                                class="px-3 py-1.5 rounded-xl bg-pink-50 hover:bg-pink-100 text-[#A50064] font-bold text-[11px] flex-shrink-0">
+                                                Chép lời nhắn
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <p class="text-[11px] text-[#A50064] bg-pink-100/70 px-3.5 py-2 rounded-xl">
+                                    💡 <strong>Lưu ý xác thực:</strong> Sau khi nhấn <strong>"Hoàn Tất Đặt Hàng"</strong>, đơn hàng sẽ ở trạng thái <strong>Đơn hàng chưa thanh toán thành công</strong> cho đến khi giao dịch chuyển khoản Ví MoMo qua mã QR được xác thực thành công.
+                                </p>
+                            </div>
+
+                            <button type="submit" id="checkout-submit-btn" form="checkout-form" class="w-full bg-sage-500 hover:bg-sage-600 text-white font-semibold py-4 px-8 rounded-full shadow-lg shadow-sage-200 transition text-base cursor-pointer">
+                                Hoàn Tất Đặt Hàng (<span id="submit-btn-total-text">{{ number_format($totalAmount, 0, ',', '.') }}₫</span>)
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -856,6 +963,46 @@
             const orig = btn.textContent;
             btn.textContent = '✓ Đã chép';
             setTimeout(() => { btn.textContent = orig; }, 1600);
+        }
+    }
+
+    function fillVerifiedTransferSample(amount, content) {
+        const amountEl = document.getElementById('verify-transfer-amount');
+        const contentEl = document.getElementById('verify-transfer-content');
+        if (amountEl) amountEl.value = amount;
+        if (contentEl) contentEl.value = content;
+    }
+
+    async function checkQrPaymentLive(checkUrl) {
+        const resultBox = document.getElementById('qr-live-check-result');
+        if (!resultBox) return;
+
+        resultBox.classList.remove('hidden', 'bg-emerald-50', 'border-emerald-300', 'text-emerald-800', 'bg-amber-100', 'border-amber-300', 'text-amber-900', 'bg-red-50', 'border-red-300', 'text-red-800');
+        resultBox.classList.add('bg-white', 'border-amber-300', 'text-stone-700');
+        resultBox.textContent = '⏳ Đang kiểm tra giao dịch chuyển khoản trên hệ thống...';
+
+        try {
+            const res = await fetch(checkUrl, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            const data = await res.json();
+
+            resultBox.classList.remove('bg-white', 'text-stone-700');
+            if (data.paid) {
+                resultBox.classList.add('bg-emerald-50', 'border-emerald-300', 'text-emerald-800');
+                resultBox.textContent = '✓ ' + data.message;
+                setTimeout(() => window.location.reload(), 900);
+            } else {
+                resultBox.classList.add('bg-amber-100', 'border-amber-300', 'text-amber-900');
+                resultBox.textContent = '⏳ ' + (data.message || 'Đơn hàng chưa thanh toán thành công.');
+            }
+        } catch (err) {
+            resultBox.classList.remove('bg-white', 'text-stone-700');
+            resultBox.classList.add('bg-red-50', 'border-red-300', 'text-red-800');
+            resultBox.textContent = '⚠ Không thể kiểm tra trạng thái thanh toán lúc này. Vui lòng thử lại.';
         }
     }
 
@@ -1438,33 +1585,12 @@
                 window.toggleSavedAddressList(false);
             }
 
-            panMapToSelectedProvince(matchedProv);
             window.recalculateShippingAndTotal();
-        };
-
-        window.quickSelectTestLocation = function (provName, distName, wardName, lat, lng) {
-            const matchedProv = selectOrInjectOption(provinceSelect, provName);
-            populateDistricts(matchedProv);
-            const matchedDist = selectOrInjectOption(districtSelect, distName);
-            populateWards(matchedProv, matchedDist);
-            selectOrInjectOption(wardSelect, wardName);
-
-            if (!streetInput.value.trim()) {
-                streetInput.value = 'Số 12 Đường Trung Tâm';
-            }
-            updateFullAddressPreview();
-            window.recalculateShippingAndTotal();
-
-            if (shippingMap && shippingMarker && lat && lng) {
-                shippingMap.flyTo([lat, lng], 13, { duration: 0.8 });
-                shippingMarker.setLatLng([lat, lng]);
-            }
         };
 
         provinceSelect.addEventListener('change', function () {
             populateDistricts(this.value);
             updateFullAddressPreview();
-            panMapToSelectedProvince(this.value);
             window.recalculateShippingAndTotal();
         });
 
@@ -1476,31 +1602,6 @@
 
         wardSelect.addEventListener('change', updateFullAddressPreview);
         streetInput.addEventListener('input', updateFullAddressPreview);
-
-        // =========================================================================
-        // BẢN ĐỒ TƯƠNG TÁC LEAFLET + OPENSTREETMAP (CHỌN VỊ TRÍ TỰ ĐỘNG ĐIỀN ĐỊA CHỈ)
-        // =========================================================================
-        const mapContainer = document.getElementById('shipping-map');
-        let shippingMap = null;
-        let shippingMarker = null;
-
-        const CITY_COORDS = {
-            'TP. Hồ Chí Minh': [10.7769, 106.7009],
-            'Thành phố Hồ Chí Minh': [10.7769, 106.7009],
-            'Thành phố Hà Nội': [21.0285, 105.8542],
-            'Thành phố Đà Nẵng': [16.0544, 108.2022],
-            'Thành phố Cần Thơ': [10.0452, 105.7469],
-            'Thành phố Hải Phòng': [20.8449, 106.6881],
-            'Tỉnh Bình Dương': [10.9804, 106.6519],
-            'Tỉnh Đồng Nai': [10.9574, 106.8427],
-            'Tỉnh Khánh Hòa': [12.2388, 109.1967],
-            'Tỉnh Lâm Đồng': [11.9404, 108.4583],
-            'Tỉnh Bà Rịa - Vũng Tàu': [10.3460, 107.0843],
-            'Tỉnh Thừa Thiên Huế': [16.4637, 107.5909],
-            'Tỉnh Nghệ An': [18.6796, 105.6813],
-            'Tỉnh Thanh Hóa': [19.8067, 105.7852],
-            'Tỉnh Quảng Ninh': [20.9599, 107.0425]
-        };
 
         function selectOrInjectOption(selectEl, textValue) {
             if (!selectEl || !textValue) return;
@@ -1524,150 +1625,6 @@
             selectEl.appendChild(newOpt);
             return newOpt.value;
         }
-
-        async function reverseGeocodeAndFillAddress(lat, lng) {
-            const statusBadge = document.getElementById('map-status-badge');
-            const statusText = document.getElementById('map-status-text');
-            const coordsText = document.getElementById('map-coords-text');
-
-            if (statusBadge) statusBadge.classList.remove('hidden');
-            if (statusText) statusText.textContent = '⏳ Đang xác định địa chỉ từ vị trí bản đồ...';
-            if (coordsText) coordsText.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=vi&addressdetails=1`);
-                if (!res.ok) throw new Error('Reverse geocode error');
-                const data = await res.json();
-                const addr = data.address || {};
-
-                const rawProvince = addr.city || addr.state || addr.province || 'TP. Hồ Chí Minh';
-                const rawDistrict = addr.city_district || addr.County || addr.county || addr.district || addr.suburb || addr.town || 'Quận 1';
-                const rawWard = addr.quarter || addr.suburb || addr.village || addr.neighbourhood || addr.hamlet || 'Phường Bến Thành';
-                const houseNum = addr.house_number || '';
-                const road = addr.road || addr.pedestrian || addr.Amenity || addr.amenity || addr.building || '';
-                const streetLine = [houseNum, road].filter(Boolean).join(' ').trim() || (data.name || `Vị trí bản đồ (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
-
-                // Tự động điền vào 3 Select Option & ô Số nhà tên đường
-                const matchedProv = selectOrInjectOption(provinceSelect, rawProvince);
-                populateDistricts(matchedProv);
-                const matchedDist = selectOrInjectOption(districtSelect, rawDistrict);
-                populateWards(matchedProv, matchedDist);
-                selectOrInjectOption(wardSelect, rawWard);
-
-                streetInput.value = streetLine;
-                updateFullAddressPreview();
-                window.recalculateShippingAndTotal();
-
-                if (statusText) {
-                    statusText.textContent = '✓ Đã tự động điền địa chỉ & cập nhật phí vận chuyển từ bản đồ!';
-                }
-            } catch (e) {
-                // Fallback khi không gọi được Nominatim
-                if (!streetInput.value.trim()) {
-                    streetInput.value = `Tọa độ bản đồ (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
-                }
-                updateFullAddressPreview();
-                window.recalculateShippingAndTotal();
-                if (statusText) {
-                    statusText.textContent = '✓ Đã ghim tọa độ vị trí giao hàng trên bản đồ';
-                }
-            }
-        }
-
-        function initShippingMap() {
-            if (!mapContainer || typeof L === 'undefined') return;
-            const defaultCenter = [10.7769, 106.7009]; // Trung tâm TP.HCM
-            shippingMap = L.map('shipping-map').setView(defaultCenter, 14);
-
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap'
-            }).addTo(shippingMap);
-
-            shippingMarker = L.marker(defaultCenter, { draggable: true }).addTo(shippingMap);
-            shippingMarker.bindPopup('<b>📍 Vị trí nhận hàng</b><br>Kéo ghim hoặc chạm vào bản đồ để chọn địa chỉ.').openPopup();
-
-            shippingMap.on('click', function (e) {
-                const { lat, lng } = e.latlng;
-                shippingMarker.setLatLng([lat, lng]);
-                reverseGeocodeAndFillAddress(lat, lng);
-            });
-
-            shippingMarker.on('dragend', function () {
-                const pos = shippingMarker.getLatLng();
-                reverseGeocodeAndFillAddress(pos.lat, pos.lng);
-            });
-        }
-
-        window.flyToPresetCity = function (lat, lng, cityName) {
-            if (!shippingMap || !shippingMarker) return;
-            shippingMap.flyTo([lat, lng], 14, { duration: 0.8 });
-            shippingMarker.setLatLng([lat, lng]);
-            reverseGeocodeAndFillAddress(lat, lng);
-        };
-
-        window.locateMyCurrentPosition = function () {
-            const btn = document.getElementById('btn-locate-me');
-            if (!navigator.geolocation) {
-                alert('Trình duyệt của bạn không hỗ trợ định vị GPS.');
-                return;
-            }
-            if (btn) btn.textContent = '⏳ Đang định vị GPS...';
-            navigator.geolocation.getCurrentPosition(
-                function (pos) {
-                    if (btn) btn.textContent = '📍 Lấy vị trí hiện tại (GPS)';
-                    const lat = pos.coords.latitude;
-                    const lng = pos.coords.longitude;
-                    if (shippingMap && shippingMarker) {
-                        shippingMap.flyTo([lat, lng], 16, { duration: 0.8 });
-                        shippingMarker.setLatLng([lat, lng]);
-                    }
-                    reverseGeocodeAndFillAddress(lat, lng);
-                },
-                function () {
-                    if (btn) btn.textContent = '📍 Lấy vị trí hiện tại (GPS)';
-                    alert('Không thể truy cập GPS. Bạn có thể chạm trực tiếp vào bản đồ hoặc dùng ô tìm kiếm trên bản đồ.');
-                },
-                { enableHighAccuracy: true, timeout: 8000 }
-            );
-        };
-
-        window.searchLocationOnMap = async function () {
-            const searchInput = document.getElementById('map-search-input');
-            const query = searchInput ? searchInput.value.trim() : '';
-            if (!query) return;
-
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(query)}&countrycodes=vn&limit=1&accept-language=vi`);
-                const results = await res.json();
-                if (Array.isArray(results) && results.length > 0) {
-                    const lat = parseFloat(results[0].lat);
-                    const lng = parseFloat(results[0].lon);
-                    if (shippingMap && shippingMarker) {
-                        shippingMap.flyTo([lat, lng], 16, { duration: 0.8 });
-                        shippingMarker.setLatLng([lat, lng]);
-                    }
-                    reverseGeocodeAndFillAddress(lat, lng);
-                } else {
-                    alert('Không tìm thấy địa điểm này. Vui lòng thử từ khóa khác hoặc chạm trực tiếp lên bản đồ.');
-                }
-            } catch (e) {
-                alert('Không thể tìm kiếm lúc này, vui lòng chạm trực tiếp vào vị trí trên bản đồ.');
-            }
-        };
-
-        function panMapToSelectedProvince(provinceName) {
-            if (!shippingMap || !shippingMarker || !provinceName) return;
-            for (const [key, coords] of Object.entries(CITY_COORDS)) {
-                if (provinceName.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(provinceName.toLowerCase())) {
-                    shippingMap.flyTo(coords, 13, { duration: 0.8 });
-                    shippingMarker.setLatLng(coords);
-                    return;
-                }
-            }
-        }
-
-        initShippingMap();
     });
 </script>
 @endsection

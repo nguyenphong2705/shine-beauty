@@ -239,6 +239,23 @@ Route::post('/thanh-toan/ma-giam-gia/go-bo', [CheckoutController::class, 'remove
  */
 Route::get('/tra-cuu-don-hang', [CheckoutController::class, 'trackOrders'])->name('orders.track');
 
+/**
+ * Kiểm tra trạng thái xác thực thanh toán QR trực tuyến (AJAX polling / kiểm tra thủ công).
+ */
+Route::get('/thanh-toan/don-hang/{order}/kiem-tra-thanh-toan', [CheckoutController::class, 'checkQrPaymentStatus'])->name('checkout.qr.check');
+
+/**
+ * Xác thực giao dịch chuyển khoản qua mã QR cho đơn hàng.
+ */
+Route::post('/thanh-toan/don-hang/{order}/xac-thuc-thanh-toan', [CheckoutController::class, 'verifyQrPayment'])->name('checkout.qr.verify');
+
+/**
+ * Webhook nhận thông báo giao dịch chuyển khoản thành công từ ngân hàng / ví MoMo (VietQR/Casso/SePay).
+ */
+Route::post('/api/webhook/payment-qr', [CheckoutController::class, 'webhookQrPayment'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class])
+    ->name('checkout.qr.webhook');
+
 
 // =========================================================================
 // 5. TÀI KHOẢN & XÁC THỰC KHÁCH HÀNG (/dang-nhap & /tai-khoan)
@@ -517,6 +534,12 @@ Route::delete('/quan-tri/san-pham/{product}', [AdminController::class, 'destroyP
  * - Phương thức: PATCH | Đường dẫn: /quan-tri/don-hang/{order}/trang-thai | Controller: AdminController@updateOrderStatus
  */
 Route::patch('/quan-tri/don-hang/{order}/trang-thai', [AdminController::class, 'updateOrderStatus'])->name('admin.orders.status');
+
+/**
+ * Xác thực hoặc hoàn tác trạng thái thanh toán chuyển khoản mã QR cho đơn hàng (Admin).
+ * - Phương thức: PATCH | Đường dẫn: /quan-tri/don-hang/{order}/xac-thuc-thanh-toan | Controller: AdminController@verifyOrderPayment
+ */
+Route::patch('/quan-tri/don-hang/{order}/xac-thuc-thanh-toan', [AdminController::class, 'verifyOrderPayment'])->name('admin.orders.verify-payment');
 
 /**
  * Xóa một đơn hàng khỏi hệ thống quản trị.

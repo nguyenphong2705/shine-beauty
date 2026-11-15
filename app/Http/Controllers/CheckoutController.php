@@ -9,9 +9,11 @@ use App\Http\Requests\StoreOrderRequest;
 use App\Models\Coupon;
 use App\Models\Order;
 use App\Services\CheckoutService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 use RuntimeException;
 
@@ -92,19 +94,13 @@ class CheckoutController extends Controller
         // Chống IDOR: Chỉ cho phép xem đơn hàng vừa đặt trong phiên hiện tại hoặc của chính user đang đăng nhập
         $successOrder = null;
         if ($orderId = $request->integer('success_order_id')) {
-            $lastPhone = session('last_customer_phone');
-            $successOrder = Order::query()
+            $candidateOrder = Order::query()
                 ->with(['items.product:id,sku,name,slug,images'])
-                ->where('id', $orderId)
-                ->where(function ($query) use ($lastPhone): void {
-                    if (Auth::check()) {
-                        $query->where('user_id', Auth::id());
-                    }
-                    if (!empty($lastPhone)) {
-                        $query->orWhere('phone', $lastPhone);
-                    }
-                })
-                ->first();
+                ->find($orderId);
+
+            if ($candidateOrder && $this->canAccessOrder($candidateOrder)) {
+                $successOrder = $candidateOrder;
+            }
         }
 
         return view('checkout.index', array_merge($summary, [
@@ -219,8 +215,227 @@ class CheckoutController extends Controller
         session()->forget(['cart', 'applied_coupon']);
         session()->put('last_customer_phone', $order->phone);
 
+        if ($order->isQrPayment()) {
+            return redirect()->route('checkout.index', ['success_order_id' => $order->id])
+                ->with(
+                    'warning',
+                    "Đơn hàng #ORDER-{$order->id} chưa thanh toán thành công. Vui lòng quét mã QR và xác thực đã chuyển khoản thành công để hệ thống xác nhận đã thanh toán cho đơn hàng."
+                );
+        }
+
         return redirect()->route('checkout.index', ['success_order_id' => $order->id])
             ->with('success', 'Đặt hàng thành công!');
+    }
+
+    /**
+     * Kiểm tra quyền truy cập thông tin đơn hàng (chống IDOR).
+     */
+    private function canAccessOrder(Order $order): bool
+    {
+        if (Auth::check()) {
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
+            if ($user->is_admin || (int) $order->user_id === (int) $user->id) {
+                return true;
+            }
+            if (!empty($user->phone) && $order->phone === $user->phone) {
+                return true;
+            }
+        }
+
+        $lastPhone = session('last_customer_phone');
+
+        return !empty($lastPhone) && $order->phone === $lastPhone;
+    }
+
+    /**
+     * Kiểm tra trực tuyến trạng thái thanh toán chuyển khoản mã QR của đơn hàng.
+     */
+    public function checkQrPaymentStatus(Request $request, Order $order): JsonResponse
+    {
+        if (!$this->canAccessOrder($order)) {
+            return response()->json([
+                'paid' => false,
+                'message' => 'Bạn không có quyền kiểm tra đơn hàng này.',
+            ], 403);
+        }
+
+        $order->refresh();
+
+        if ($order->isPaid()) {
+            return response()->json([
+                'paid' => true,
+                'payment_status' => 'PAID',
+                'payment_status_label' => 'Đã thanh toán cho đơn hàng',
+                'transaction_code' => $order->transaction_code,
+                'paid_at' => $order->paid_at?->format('d/m/Y H:i:s'),
+                'message' => "Đã xác thực chuyển khoản thành công (Mã GD: {$order->transaction_code}). Đơn hàng đã được xác nhận thanh toán!",
+            ]);
+        }
+
+        return response()->json([
+            'paid' => false,
+            'payment_status' => 'UNPAID',
+            'payment_status_label' => 'Đơn hàng chưa thanh toán thành công',
+            'message' => "Chưa xác thực được giao dịch chuyển khoản cho nội dung \"SHINE ORDER{$order->id}\" với số tiền " . number_format((int) $order->total_amount, 0, ',', '.') . '₫. Đơn hàng hiện vẫn ở trạng thái: Đơn hàng chưa thanh toán thành công.',
+        ]);
+    }
+
+    /**
+     * Xác thực giao dịch chuyển khoản qua mã QR trước khi xác nhận đã thanh toán cho đơn hàng.
+     */
+    public function verifyQrPayment(Request $request, Order $order): RedirectResponse
+    {
+        if (!$this->canAccessOrder($order)) {
+            abort(403, 'Bạn không có quyền xác thực đơn hàng này.');
+        }
+
+        if (!$order->isQrPayment()) {
+            return redirect()->route('checkout.index', ['success_order_id' => $order->id])
+                ->with('error', "Đơn hàng #ORDER-{$order->id} không sử dụng phương thức thanh toán qua mã QR.");
+        }
+
+        if ($order->isPaid()) {
+            return redirect()->route('checkout.index', ['success_order_id' => $order->id])
+                ->with('success', "Đơn hàng #ORDER-{$order->id} đã được xác thực thanh toán trước đó (Mã GD: {$order->transaction_code}).");
+        }
+
+        $rawAmountInput = trim((string) $request->input('transfer_amount', ''));
+        $normalizedAmountStr = str_starts_with($rawAmountInput, '-')
+            ? ''
+            : preg_replace('/[^0-9]/', '', $rawAmountInput);
+
+        $validator = Validator::make([
+            'transaction_code' => strtoupper(trim((string) $request->input('transaction_code', ''))),
+            'transfer_amount' => $normalizedAmountStr,
+            'transfer_content' => trim((string) $request->input('transfer_content', '')),
+            'confirm_transferred' => $request->input('confirm_transferred'),
+        ], [
+            'transaction_code' => ['required', 'string', 'regex:/^[A-Za-z0-9\-]{6,30}$/'],
+            'transfer_amount' => ['required', 'numeric'],
+            'transfer_content' => ['required', 'string', 'max:255'],
+            'confirm_transferred' => ['required', 'accepted'],
+        ], [
+            'transaction_code.required' => 'Vui lòng nhập mã giao dịch chuyển khoản từ ứng dụng Ngân hàng / MoMo.',
+            'transaction_code.regex' => 'Mã giao dịch phải gồm 6–30 ký tự chữ, số hoặc dấu gạch ngang (VD: FT2631988899).',
+            'transfer_amount.required' => 'Vui lòng nhập chính xác số tiền bạn đã chuyển khoản.',
+            'transfer_amount.numeric' => 'Số tiền đã chuyển khoản phải là giá trị số hợp lệ.',
+            'transfer_content.required' => 'Vui lòng nhập nội dung chuyển khoản trên biên lai.',
+            'confirm_transferred.required' => 'Vui lòng đánh dấu xác nhận bạn đã hoàn tất chuyển khoản.',
+            'confirm_transferred.accepted' => 'Vui lòng đánh dấu xác nhận bạn đã hoàn tất chuyển khoản.',
+        ]);
+
+        if ($validator->fails()) {
+            $order->update(['payment_status' => 'UNPAID']);
+
+            return redirect()->route('checkout.index', ['success_order_id' => $order->id])
+                ->withInput()
+                ->withErrors($validator)
+                ->with('error', $validator->errors()->first() . " Đơn hàng #ORDER-{$order->id} vẫn ở trạng thái: Đơn hàng chưa thanh toán thành công.");
+        }
+
+        $txCode = strtoupper(trim((string) $request->input('transaction_code', '')));
+        $transferAmount = (int) $normalizedAmountStr;
+        $normalizedContent = preg_replace('/[^A-Z0-9]/', '', strtoupper((string) $request->input('transfer_content', '')));
+        $expectedContent = 'SHINEORDER' . $order->id;
+        $failureReason = null;
+
+        if (preg_match('/^0+$/', $txCode)) {
+            $failureReason = 'Mã giao dịch không hợp lệ (không được chỉ gồm các chữ số 0).';
+        } elseif (
+            Order::query()
+                ->where('id', '!=', $order->id)
+                ->where('payment_status', 'PAID')
+                ->where('transaction_code', $txCode)
+                ->exists()
+        ) {
+            $failureReason = "Mã giao dịch {$txCode} đã được sử dụng để xác thực cho một đơn hàng khác.";
+        } elseif ($transferAmount !== (int) $order->total_amount) {
+            $failureReason = 'Số tiền chuyển khoản (' . number_format($transferAmount, 0, ',', '.') . '₫) không khớp với tổng thanh toán của đơn hàng (' . number_format((int) $order->total_amount, 0, ',', '.') . '₫).';
+        } elseif (!str_contains((string) $normalizedContent, $expectedContent)) {
+            $failureReason = "Nội dung chuyển khoản chưa chứa đúng mã đối chiếu \"SHINE ORDER{$order->id}\".";
+        }
+
+        if ($failureReason !== null) {
+            $order->update(['payment_status' => 'UNPAID']);
+
+            return redirect()->route('checkout.index', ['success_order_id' => $order->id])
+                ->withInput()
+                ->with('error', "Xác thực chuyển khoản thất bại: {$failureReason} Đơn hàng #ORDER-{$order->id} vẫn ở trạng thái: Đơn hàng chưa thanh toán thành công.");
+        }
+
+        $order->update([
+            'payment_status' => 'PAID',
+            'transaction_code' => $txCode,
+            'paid_at' => now(),
+            'status' => $order->status === 'PENDING' ? 'CONFIRMED' : $order->status,
+        ]);
+
+        return redirect()->route('checkout.index', ['success_order_id' => $order->id])
+            ->with('success', "Đã xác thực chuyển khoản thành công (Mã GD: {$txCode})! Đơn hàng #ORDER-{$order->id} đã được xác nhận ĐÃ THANH TOÁN.");
+    }
+
+    /**
+     * Webhook nhận thông báo chuyển khoản tự động từ cổng thanh toán / ngân hàng.
+     */
+    public function webhookQrPayment(Request $request): JsonResponse
+    {
+        $content = (string) ($request->input('content') ?? $request->input('description') ?? '');
+        $rawAmount = (string) ($request->input('amount') ?? $request->input('transferAmount') ?? '0');
+        $amount = str_starts_with(trim($rawAmount), '-')
+            ? 0
+            : (int) preg_replace('/[^0-9]/', '', $rawAmount);
+        $txCode = strtoupper(trim((string) ($request->input('referenceCode') ?? $request->input('transaction_code') ?? '')));
+
+        if (!preg_match('/SHINE\s*ORDER\s*(\d+)/i', $content, $matches)) {
+            return response()->json([
+                'success' => false,
+                'paid' => false,
+                'message' => 'Không tìm thấy mã đơn hàng (SHINE ORDER<id>) trong nội dung chuyển khoản.',
+            ], 422);
+        }
+
+        $orderId = (int) $matches[1];
+        $order = Order::query()->find($orderId);
+
+        if (!$order || !$order->isQrPayment()) {
+            return response()->json([
+                'success' => false,
+                'paid' => false,
+                'message' => 'Không tìm thấy đơn hàng thanh toán mã QR tương ứng.',
+            ], 404);
+        }
+
+        if ($amount < (int) $order->total_amount) {
+            return response()->json([
+                'success' => false,
+                'paid' => false,
+                'payment_status' => 'UNPAID',
+                'message' => 'Số tiền chuyển khoản chưa đủ giá trị đơn hàng. Đơn hàng chưa thanh toán thành công.',
+            ], 422);
+        }
+
+        if ($txCode === '') {
+            $txCode = 'QR-AUTO-' . $order->id . '-' . now()->format('His');
+        }
+
+        if (!$order->isPaid()) {
+            $order->update([
+                'payment_status' => 'PAID',
+                'transaction_code' => $txCode,
+                'paid_at' => now(),
+                'status' => $order->status === 'PENDING' ? 'CONFIRMED' : $order->status,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'paid' => true,
+            'order_id' => $order->id,
+            'payment_status' => $order->payment_status,
+            'transaction_code' => $order->transaction_code,
+            'message' => "Đã xác thực chuyển khoản thành công và xác nhận đã thanh toán cho đơn hàng #ORDER-{$order->id}.",
+        ]);
     }
 
     /**
@@ -242,6 +457,7 @@ class CheckoutController extends Controller
         $orders = collect();
 
         if (strlen($phone) >= 9) {
+            session()->put('last_customer_phone', $phone);
             $orders = Order::query()
                 ->with(['items.product:id,sku,name,slug,images'])
                 ->where('phone', $phone)

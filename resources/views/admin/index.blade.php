@@ -512,11 +512,26 @@
                                                 'MOMO_QR' => ['label' => '📱 QR MoMo', 'class' => 'bg-pink-50 text-pink-700 border border-pink-200'],
                                                 default => ['label' => '💵 COD', 'class' => 'bg-stone-100 text-stone-600'],
                                             };
+                                            $isQrOrder = $order->isQrPayment();
+                                            $isQrPaid = $order->isPaid();
                                         @endphp
                                         <p class="text-base font-bold text-sage-600">{{ number_format($order->total_amount, 0, ',', '.') }}₫</p>
                                         <span class="inline-block text-[10px] font-bold uppercase px-2 py-0.5 rounded-full {{ $adminPmBadge['class'] }} mt-1">
                                             {{ $adminPmBadge['label'] }}
                                         </span>
+                                        @if($isQrOrder && $isQrPaid)
+                                            <p class="mt-1">
+                                                <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                    ✓ Đã thanh toán (Mã GD: {{ $order->transaction_code }})
+                                                </span>
+                                            </p>
+                                        @elseif($isQrOrder)
+                                            <p class="mt-1">
+                                                <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-300">
+                                                    ⏳ Đơn hàng chưa thanh toán thành công
+                                                </span>
+                                            </p>
+                                        @endif
                                         @if($order->coupon_code)
                                             <p class="text-[11px] text-emerald-600 font-semibold mt-1">
                                                 🎟️ {{ $order->coupon_code }} (-{{ number_format($order->discount_amount, 0, ',', '.') }}₫)
@@ -539,33 +554,60 @@
                                                 'COMPLETED' => 'Hoàn thành',
                                                 'CANCELLED' => 'Đã hủy',
                                             ];
+                                            $displayOrderBadgeColor = ($isQrOrder && !$isQrPaid && $order->status !== 'CANCELLED')
+                                                ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                                : ($badgeColors[$order->status] ?? 'bg-stone-100 text-stone-700');
+                                            $displayOrderBadgeLabel = ($isQrOrder && !$isQrPaid && $order->status !== 'CANCELLED')
+                                                ? 'Đơn hàng chưa thanh toán thành công'
+                                                : ($statusLabels[$order->status] ?? $order->status);
                                         @endphp
-                                        <span class="inline-block text-xs font-bold px-3 py-1 rounded-full border {{ $badgeColors[$order->status] ?? 'bg-stone-100 text-stone-700' }}">
-                                            {{ $statusLabels[$order->status] ?? $order->status }}
+                                        <span class="inline-block text-xs font-bold px-3 py-1 rounded-full border {{ $displayOrderBadgeColor }}">
+                                            {{ $displayOrderBadgeLabel }}
                                         </span>
                                     </td>
                                     <td class="py-4 px-3 text-right whitespace-nowrap">
-                                        <div class="flex items-center justify-end gap-2">
-                                            <form action="{{ route('admin.orders.status', $order) }}" method="POST" class="flex items-center gap-1.5">
-                                                @csrf
-                                                @method('PATCH')
-                                                <select name="status" class="text-xs rounded-xl border border-stone-300 px-2.5 py-1.5 bg-white">
-                                                    @foreach(['PENDING' => 'Chờ xác nhận', 'CONFIRMED' => 'Đã xác nhận', 'SHIPPING' => 'Đang giao', 'COMPLETED' => 'Hoàn thành', 'CANCELLED' => 'Hủy đơn'] as $stKey => $stVal)
-                                                        <option value="{{ $stKey }}" {{ $order->status === $stKey ? 'selected' : '' }}>{{ $stVal }}</option>
-                                                    @endforeach
-                                                </select>
-                                                <button type="submit" class="bg-stone-900 hover:bg-sage-600 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition">
-                                                    Lưu
-                                                </button>
-                                            </form>
+                                        <div class="flex flex-col items-end gap-2">
+                                            <div class="flex items-center justify-end gap-2">
+                                                <form action="{{ route('admin.orders.status', $order) }}" method="POST" class="flex items-center gap-1.5">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <select name="status" class="text-xs rounded-xl border border-stone-300 px-2.5 py-1.5 bg-white">
+                                                        @foreach(['PENDING' => 'Chờ xác nhận', 'CONFIRMED' => 'Đã xác nhận', 'SHIPPING' => 'Đang giao', 'COMPLETED' => 'Hoàn thành', 'CANCELLED' => 'Hủy đơn'] as $stKey => $stVal)
+                                                            <option value="{{ $stKey }}" {{ $order->status === $stKey ? 'selected' : '' }}>{{ $stVal }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    <button type="submit" class="bg-stone-900 hover:bg-sage-600 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition">
+                                                        Lưu
+                                                    </button>
+                                                </form>
 
-                                            <form action="{{ route('admin.orders.destroy', $order) }}" method="POST" onsubmit="return confirm('Xóa đơn hàng #ORDER-{{ $order->id }}?')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="text-xs text-red-500 hover:bg-red-50 px-2.5 py-1.5 rounded-xl border border-red-200 transition">
-                                                    Xóa
-                                                </button>
-                                            </form>
+                                                <form action="{{ route('admin.orders.destroy', $order) }}" method="POST" onsubmit="return confirm('Xóa đơn hàng #ORDER-{{ $order->id }}?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="text-xs text-red-500 hover:bg-red-50 px-2.5 py-1.5 rounded-xl border border-red-200 transition">
+                                                        Xóa
+                                                    </button>
+                                                </form>
+                                            </div>
+
+                                            @if($isQrOrder)
+                                                <form action="{{ route('admin.orders.verify-payment', $order) }}" method="POST" class="flex items-center justify-end gap-1.5">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    @if(!$isQrPaid)
+                                                        <input type="hidden" name="action" value="verify">
+                                                        <input type="text" name="transaction_code" placeholder="Mã GD (VD: FT...)" class="w-32 px-2.5 py-1 text-[11px] font-mono uppercase rounded-lg border border-emerald-300 bg-white focus:outline-none">
+                                                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold px-2.5 py-1 rounded-lg transition cursor-pointer">
+                                                            ✓ Xác thực đã chuyển khoản
+                                                        </button>
+                                                    @else
+                                                        <input type="hidden" name="action" value="unpaid">
+                                                        <button type="submit" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition cursor-pointer">
+                                                            ↩ Đánh dấu chưa thanh toán
+                                                        </button>
+                                                    @endif
+                                                </form>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>

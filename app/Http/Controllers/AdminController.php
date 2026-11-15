@@ -700,9 +700,63 @@ class AdminController extends Controller
             'status' => 'required|in:PENDING,CONFIRMED,SHIPPING,COMPLETED,CANCELLED',
         ]);
 
-        $order->update(['status' => $request->input('status')]);
+        $newStatus = (string) $request->input('status');
+
+        if ($order->isQrPayment() && !$order->isPaid() && in_array($newStatus, ['CONFIRMED', 'SHIPPING', 'COMPLETED'], true)) {
+            return back()->withErrors([
+                'status' => "Đơn hàng #ORDER-{$order->id} thanh toán bằng Mã QR hiện chưa thanh toán thành công (chưa xác thực chuyển khoản). Vui lòng xác thực đã nhận chuyển khoản trước khi duyệt/giao đơn hàng!",
+            ]);
+        }
+
+        $updateData = ['status' => $newStatus];
+        if ($order->payment_method === 'COD' && $newStatus === 'COMPLETED') {
+            $updateData['payment_status'] = 'PAID';
+            $updateData['paid_at'] = $order->paid_at ?? now();
+        }
+
+        $order->update($updateData);
 
         return back()->with('success', "Đã cập nhật trạng thái đơn hàng #ORDER-{$order->id} sang {$order->status}.");
+    }
+
+    /**
+     * Xác thực hoặc hoàn tác trạng thái thanh toán chuyển khoản mã QR của đơn hàng (Admin).
+     */
+    public function verifyOrderPayment(Request $request, Order $order): RedirectResponse
+    {
+        if ($redirect = $this->authorizeShopOwner()) {
+            return $redirect;
+        }
+
+        $validated = $request->validate([
+            'action' => ['required', 'in:verify,unpaid'],
+            'transaction_code' => ['nullable', 'string', 'max:40'],
+        ]);
+
+        if ($validated['action'] === 'verify') {
+            $txCode = strtoupper(trim((string) ($validated['transaction_code'] ?? '')));
+            if ($txCode === '') {
+                $txCode = 'QR-ADMIN-' . $order->id . '-' . now()->format('His');
+            }
+
+            $order->update([
+                'payment_status' => 'PAID',
+                'transaction_code' => $txCode,
+                'paid_at' => now(),
+                'status' => $order->status === 'PENDING' ? 'CONFIRMED' : $order->status,
+            ]);
+
+            return back()->with('success', "Đã xác thực chuyển khoản thành công (Mã GD: {$txCode}) và xác nhận đã thanh toán cho đơn hàng #ORDER-{$order->id}!");
+        }
+
+        $order->update([
+            'payment_status' => 'UNPAID',
+            'transaction_code' => null,
+            'paid_at' => null,
+            'status' => $order->status === 'CANCELLED' ? 'CANCELLED' : 'PENDING',
+        ]);
+
+        return back()->with('success', "Đã chuyển đơn hàng #ORDER-{$order->id} về trạng thái: Đơn hàng chưa thanh toán thành công.");
     }
 
     /**

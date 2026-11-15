@@ -332,6 +332,9 @@
     <!-- ========================================================================= -->
     @if($currentTab === 'addresses')
     <div>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
         <section id="section-addresses" class="bg-white rounded-3xl border border-sage-100 p-6 sm:p-8 shadow-xs space-y-5">
             <div class="flex flex-wrap items-center justify-between gap-3 border-b border-sage-100 pb-4">
                 <div>
@@ -340,10 +343,10 @@
                         📍 Sổ Địa Chỉ Nhận Hàng ({{ $addresses->count() }} địa chỉ)
                     </h2>
                     <p class="text-xs text-stone-500 mt-1">
-                        Lưu sẵn 2 – 3+ địa chỉ (Nhà riêng, Văn phòng, Người thân...) và bấm <strong>"Đặt làm mặc định"</strong> để thanh toán ngay không cần nhập lại.
+                        Lưu sẵn 2 – 3+ địa chỉ (Nhà riêng, Văn phòng, Người thân...), chọn vị trí nhanh trên bản đồ và bấm <strong>"Đặt làm mặc định"</strong> để thanh toán ngay không cần nhập lại.
                     </p>
                 </div>
-                <button type="button" onclick="document.getElementById('add-address-form-box').classList.toggle('hidden')"
+                <button type="button" onclick="openCustomerAddressMapForAdd()"
                     class="text-xs font-bold bg-sage-500 hover:bg-sage-600 text-white px-4 py-2.5 rounded-full shadow-xs transition cursor-pointer">
                     + Thêm Địa Chỉ Mới
                 </button>
@@ -356,7 +359,7 @@
                     <button type="button" onclick="document.getElementById('add-address-form-box').classList.add('hidden')" class="text-stone-400 hover:text-stone-700 font-bold cursor-pointer">✕ Đóng</button>
                 </div>
 
-                <form action="{{ route('customer.addresses.store') }}" method="POST" class="space-y-3.5">
+                <form id="add-address-form" action="{{ route('customer.addresses.store') }}" method="POST" class="space-y-3.5">
                     @csrf
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
@@ -395,9 +398,68 @@
                     </div>
 
                     <div>
-                        <label class="block text-[11px] font-semibold text-stone-600 mb-1">Số nhà, tên đường, tòa nhà *</label>
-                        <input type="text" name="street_address" required placeholder="VD: Số 120 Nguyễn Đình Chiểu"
+                        <label class="block text-[11px] font-semibold text-stone-600 mb-1">Số nhà, tên đường, tòa nhà (Tự nhập hoặc chọn trên bản đồ bên dưới) *</label>
+                        <input type="text" name="street_address" required placeholder="VD: Số 120 Nguyễn Đình Chiểu (hoặc chạm vào bản đồ bên dưới)"
                             class="w-full px-3.5 py-2 text-xs rounded-xl border border-sage-200 bg-white focus:outline-none focus:ring-2 focus:ring-sage-400">
+                    </div>
+
+                    <!-- Vị trí gắn bản đồ khi Thêm địa chỉ mới (nằm dưới phần nhập địa chỉ bằng tay) -->
+                    <div id="add-address-map-slot" class="pt-1">
+                        <!-- BẢN ĐỒ CHỌN NHANH VỊ TRÍ GIAO HÀNG (DÙNG CHUNG CHO THÊM MỚI & THAY ĐỔI ĐỊA CHỈ) -->
+                        <div id="customer-address-map-widget" class="bg-white rounded-2xl border border-sage-200 p-3.5 space-y-3 shadow-2xs">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div>
+                                    <span class="text-xs font-bold text-stone-800 flex items-center gap-1.5">
+                                        🗺️ Chọn Nhanh Vị Trí Trên Bản Đồ
+                                    </span>
+                                    <p class="text-[11px] text-stone-500">
+                                        Chạm vào bản đồ hoặc kéo ghim đỏ để hệ thống <strong>tự động điền Tỉnh/TP, Quận/Huyện, Phường/Xã &amp; Số nhà tên đường</strong>.
+                                    </p>
+                                </div>
+                                <button type="button" id="btn-locate-me" onclick="locateMyCurrentPosition()"
+                                    class="inline-flex items-center gap-1.5 bg-sage-500 hover:bg-sage-600 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition shadow-xs cursor-pointer">
+                                    📍 Lấy vị trí hiện tại (GPS)
+                                </button>
+                            </div>
+
+                            <!-- Thanh tìm kiếm nhanh địa điểm trên bản đồ -->
+                            <div class="flex gap-2">
+                                <input type="text" id="map-search-input"
+                                    placeholder="🔍 Tìm nhanh đường phố, tòa nhà, địa điểm trên bản đồ (VD: 28 Phạm Văn Chiêu, Gò Vấp)..."
+                                    onkeydown="if(event.key==='Enter'){event.preventDefault();searchLocationOnMap();}"
+                                    class="flex-1 px-3.5 py-2 text-xs rounded-xl border border-sage-200 bg-[#F5FAF7] focus:bg-white focus:outline-none focus:ring-2 focus:ring-sage-300">
+                                <button type="button" onclick="searchLocationOnMap()"
+                                    class="bg-stone-900 hover:bg-sage-600 text-white text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer flex-shrink-0">
+                                    Tìm trên bản đồ
+                                </button>
+                            </div>
+
+                            <!-- Nút nhảy nhanh chọn khu vực mẫu trên bản đồ -->
+                            <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
+                                <span class="text-stone-500 font-semibold">Chọn nhanh khu vực:</span>
+                                <button type="button" onclick="quickSelectTestLocation('TP. Hồ Chí Minh', 'Quận 1', 'Phường Bến Thành', 10.7769, 106.7009)" class="px-2.5 py-1 rounded-full bg-sage-50 hover:bg-sage-100 text-sage-700 border border-sage-200 font-medium cursor-pointer">
+                                    🏙️ Nội thành TP.HCM
+                                </button>
+                                <button type="button" onclick="quickSelectTestLocation('TP. Hồ Chí Minh', 'Huyện Củ Chi', 'Thị trấn Củ Chi', 10.9733, 106.4933)" class="px-2.5 py-1 rounded-full bg-sage-50 hover:bg-sage-100 text-sage-700 border border-sage-200 font-medium cursor-pointer">
+                                    🏘️ Huyện Củ Chi
+                                </button>
+                                <button type="button" onclick="quickSelectTestLocation('Thành phố Đà Nẵng', 'Quận Hải Châu', 'Phường Hải Châu I', 16.0544, 108.2022)" class="px-2.5 py-1 rounded-full bg-sage-50 hover:bg-sage-100 text-sage-700 border border-sage-200 font-medium cursor-pointer">
+                                    🚛 TP. Đà Nẵng
+                                </button>
+                                <button type="button" onclick="quickSelectTestLocation('Tỉnh Lào Cai', 'Thị xã Sa Pa', 'Phường Sa Pa', 22.3364, 103.8438)" class="px-2.5 py-1 rounded-full bg-sage-50 hover:bg-sage-100 text-sage-700 border border-sage-200 font-medium cursor-pointer">
+                                    ⛰️ Sa Pa - Lào Cai
+                                </button>
+                            </div>
+
+                            <!-- Khung hiển thị bản đồ tương tác -->
+                            <div class="relative rounded-2xl overflow-hidden border border-sage-200">
+                                <div id="shipping-map" class="w-full h-64 sm:h-72 z-10 bg-sage-50"></div>
+                                <div id="map-status-badge" class="hidden text-[11px] font-medium px-3 py-1.5 bg-emerald-50 text-emerald-800 border-t border-emerald-200 flex items-center justify-between">
+                                    <span id="map-status-text">✓ Đã chọn vị trí trên bản đồ</span>
+                                    <span id="map-coords-text" class="font-mono text-[10px] text-emerald-600"></span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="flex items-center justify-between pt-1">
@@ -447,9 +509,9 @@
                                     </form>
                                 @endif
 
-                                <button type="button" onclick="document.getElementById('edit-addr-{{ $addr->id }}').classList.toggle('hidden')"
+                                <button type="button" onclick="openCustomerAddressMapForEdit({{ $addr->id }})"
                                     class="text-xs font-semibold text-sage-700 bg-white hover:bg-sage-50 border border-sage-200 px-3 py-1.5 rounded-xl transition cursor-pointer">
-                                    Sửa
+                                    Sửa / Chọn trên bản đồ
                                 </button>
 
                                 @if($addresses->count() > 1)
@@ -466,7 +528,7 @@
 
                         <!-- Form chỉnh sửa nhanh địa chỉ này -->
                         <div id="edit-addr-{{ $addr->id }}" class="hidden pt-3 border-t border-sage-200/70">
-                            <form action="{{ route('customer.addresses.update', $addr) }}" method="POST" class="space-y-3 text-xs">
+                            <form id="edit-address-form-{{ $addr->id }}" action="{{ route('customer.addresses.update', $addr) }}" method="POST" class="space-y-3 text-xs">
                                 @csrf
                                 @method('PUT')
                                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -504,10 +566,14 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="block text-[10px] font-bold uppercase text-stone-500 mb-1">Số nhà, tên đường *</label>
+                                    <label class="block text-[10px] font-bold uppercase text-stone-500 mb-1">Số nhà, tên đường (Tự nhập hoặc chọn trên bản đồ bên dưới) *</label>
                                     <input type="text" name="street_address" required value="{{ $addr->street_address ?: $addr->address }}"
                                         class="w-full px-3 py-2 text-xs rounded-xl border border-sage-200 bg-white">
                                 </div>
+
+                                <!-- Vị trí gắn bản đồ khi Sửa / Thay đổi địa chỉ này (nằm dưới phần nhập địa chỉ bằng tay) -->
+                                <div id="edit-address-map-slot-{{ $addr->id }}" class="pt-1"></div>
+
                                 <div class="flex items-center justify-between">
                                     <label class="flex items-center gap-2 cursor-pointer text-stone-600">
                                         <input type="checkbox" name="is_default" value="1" {{ $addr->is_default ? 'checked' : '' }} class="rounded accent-sage-600">
@@ -524,6 +590,242 @@
                 @endforeach
             </div>
         </section>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const mapWidget = document.getElementById('customer-address-map-widget');
+                const mapContainer = document.getElementById('shipping-map');
+                let shippingMap = null;
+                let shippingMarker = null;
+                let activeAddressForm = document.getElementById('add-address-form');
+
+                const CITY_COORDS = {
+                    'TP. Hồ Chí Minh': [10.7769, 106.7009],
+                    'Thành phố Hồ Chí Minh': [10.7769, 106.7009],
+                    'Thành phố Hà Nội': [21.0285, 105.8542],
+                    'Thành phố Đà Nẵng': [16.0544, 108.2022],
+                    'Thành phố Cần Thơ': [10.0452, 105.7469],
+                    'Thành phố Hải Phòng': [20.8449, 106.6881],
+                    'Tỉnh Bình Dương': [10.9804, 106.6519],
+                    'Tỉnh Đồng Nai': [10.9574, 106.8427],
+                    'Tỉnh Khánh Hòa': [12.2388, 109.1967],
+                    'Tỉnh Lâm Đồng': [11.9404, 108.4583],
+                    'Tỉnh Bà Rịa - Vũng Tàu': [10.3460, 107.0843],
+                    'Tỉnh Thừa Thiên Huế': [16.4637, 107.5909],
+                    'Tỉnh Nghệ An': [18.6796, 105.6813],
+                    'Tỉnh Thanh Hóa': [19.8067, 105.7852],
+                    'Tỉnh Quảng Ninh': [20.9599, 107.0425],
+                    'Tỉnh Lào Cai': [22.3364, 103.8438]
+                };
+
+                function ensureMapInitialized() {
+                    if (shippingMap || !mapContainer || typeof L === 'undefined') {
+                        if (shippingMap) {
+                            setTimeout(() => shippingMap.invalidateSize(), 120);
+                        }
+                        return;
+                    }
+                    const defaultCenter = [10.7769, 106.7009];
+                    shippingMap = L.map('shipping-map').setView(defaultCenter, 14);
+
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 19,
+                        attribution: '&copy; OpenStreetMap'
+                    }).addTo(shippingMap);
+
+                    shippingMarker = L.marker(defaultCenter, { draggable: true }).addTo(shippingMap);
+                    shippingMarker.bindPopup('<b>📍 Vị trí nhận hàng</b><br>Kéo ghim hoặc chạm vào bản đồ để tự động điền địa chỉ.').openPopup();
+
+                    shippingMap.on('click', function (e) {
+                        const { lat, lng } = e.latlng;
+                        shippingMarker.setLatLng([lat, lng]);
+                        reverseGeocodeAndFillAddress(lat, lng);
+                    });
+
+                    shippingMarker.on('dragend', function () {
+                        const pos = shippingMarker.getLatLng();
+                        reverseGeocodeAndFillAddress(pos.lat, pos.lng);
+                    });
+
+                    setTimeout(() => shippingMap.invalidateSize(), 120);
+                }
+
+                function fillActiveFormFields(province, district, ward, street) {
+                    if (!activeAddressForm) return;
+                    const provEl = activeAddressForm.querySelector('input[name="province"]');
+                    const distEl = activeAddressForm.querySelector('input[name="district"]');
+                    const wardEl = activeAddressForm.querySelector('input[name="ward"]');
+                    const streetEl = activeAddressForm.querySelector('input[name="street_address"]');
+
+                    if (provEl && province) provEl.value = province;
+                    if (distEl && district) distEl.value = district;
+                    if (wardEl && ward) wardEl.value = ward;
+                    if (streetEl && street) streetEl.value = street;
+                }
+
+                function panMapToProvinceName(provinceName) {
+                    if (!shippingMap || !shippingMarker || !provinceName) return;
+                    for (const [key, coords] of Object.entries(CITY_COORDS)) {
+                        if (provinceName.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(provinceName.toLowerCase())) {
+                            shippingMap.flyTo(coords, 13, { duration: 0.6 });
+                            shippingMarker.setLatLng(coords);
+                            return;
+                        }
+                    }
+                }
+
+                window.openCustomerAddressMapForAdd = function () {
+                    const addBox = document.getElementById('add-address-form-box');
+                    const addSlot = document.getElementById('add-address-map-slot');
+                    if (!addBox) return;
+
+                    const willOpen = addBox.classList.contains('hidden');
+                    document.querySelectorAll('[id^="edit-addr-"]').forEach(el => el.classList.add('hidden'));
+
+                    if (willOpen) {
+                        addBox.classList.remove('hidden');
+                        activeAddressForm = document.getElementById('add-address-form');
+                        if (addSlot && mapWidget) {
+                            addSlot.appendChild(mapWidget);
+                        }
+                        ensureMapInitialized();
+                    } else {
+                        addBox.classList.add('hidden');
+                    }
+                };
+
+                window.openCustomerAddressMapForEdit = function (addrId) {
+                    const editBox = document.getElementById('edit-addr-' + addrId);
+                    const editSlot = document.getElementById('edit-address-map-slot-' + addrId);
+                    const addBox = document.getElementById('add-address-form-box');
+                    if (!editBox) return;
+
+                    const willOpen = editBox.classList.contains('hidden');
+                    if (addBox) addBox.classList.add('hidden');
+                    document.querySelectorAll('[id^="edit-addr-"]').forEach(el => el.classList.add('hidden'));
+
+                    if (willOpen) {
+                        editBox.classList.remove('hidden');
+                        activeAddressForm = document.getElementById('edit-address-form-' + addrId);
+                        if (editSlot && mapWidget) {
+                            editSlot.appendChild(mapWidget);
+                        }
+                        ensureMapInitialized();
+                        const provEl = activeAddressForm ? activeAddressForm.querySelector('input[name="province"]') : null;
+                        if (provEl && provEl.value) {
+                            setTimeout(() => panMapToProvinceName(provEl.value), 160);
+                        }
+                    }
+                };
+
+                async function reverseGeocodeAndFillAddress(lat, lng) {
+                    const statusBadge = document.getElementById('map-status-badge');
+                    const statusText = document.getElementById('map-status-text');
+                    const coordsText = document.getElementById('map-coords-text');
+
+                    if (statusBadge) statusBadge.classList.remove('hidden');
+                    if (statusText) statusText.textContent = '⏳ Đang xác định địa chỉ từ vị trí bản đồ...';
+                    if (coordsText) coordsText.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+
+                    try {
+                        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=vi&addressdetails=1`);
+                        if (!res.ok) throw new Error('Reverse geocode error');
+                        const data = await res.json();
+                        const addr = data.address || {};
+
+                        const rawProvince = addr.city || addr.state || addr.province || 'TP. Hồ Chí Minh';
+                        const rawDistrict = addr.city_district || addr.County || addr.county || addr.district || addr.suburb || addr.town || 'Quận 1';
+                        const rawWard = addr.quarter || addr.suburb || addr.village || addr.neighbourhood || addr.hamlet || 'Phường Bến Thành';
+                        const houseNum = addr.house_number || '';
+                        const road = addr.road || addr.pedestrian || addr.Amenity || addr.amenity || addr.building || '';
+                        const streetLine = [houseNum, road].filter(Boolean).join(' ').trim() || (data.name || `Vị trí bản đồ (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+
+                        fillActiveFormFields(rawProvince, rawDistrict, rawWard, streetLine);
+
+                        if (statusText) {
+                            statusText.textContent = '✓ Đã tự động điền Tỉnh/TP, Quận/Huyện, Phường/Xã & Số nhà tên đường từ bản đồ!';
+                        }
+                    } catch (e) {
+                        const streetEl = activeAddressForm ? activeAddressForm.querySelector('input[name="street_address"]') : null;
+                        if (streetEl && !streetEl.value.trim()) {
+                            streetEl.value = `Tọa độ bản đồ (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
+                        }
+                        if (statusText) {
+                            statusText.textContent = '✓ Đã ghim tọa độ vị trí giao hàng trên bản đồ';
+                        }
+                    }
+                }
+
+                window.quickSelectTestLocation = function (provName, distName, wardName, lat, lng) {
+                    const streetEl = activeAddressForm ? activeAddressForm.querySelector('input[name="street_address"]') : null;
+                    const defaultStreet = (streetEl && streetEl.value.trim()) ? streetEl.value.trim() : 'Số 12 Đường Trung Tâm';
+                    fillActiveFormFields(provName, distName, wardName, defaultStreet);
+
+                    if (shippingMap && shippingMarker && lat && lng) {
+                        shippingMap.flyTo([lat, lng], 14, { duration: 0.8 });
+                        shippingMarker.setLatLng([lat, lng]);
+                    }
+                    const statusBadge = document.getElementById('map-status-badge');
+                    const statusText = document.getElementById('map-status-text');
+                    const coordsText = document.getElementById('map-coords-text');
+                    if (statusBadge) statusBadge.classList.remove('hidden');
+                    if (statusText) statusText.textContent = `✓ Đã chọn nhanh khu vực ${wardName}, ${distName}, ${provName}`;
+                    if (coordsText && lat && lng) coordsText.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+                };
+
+                window.locateMyCurrentPosition = function () {
+                    const btn = document.getElementById('btn-locate-me');
+                    if (!navigator.geolocation) {
+                        alert('Trình duyệt của bạn không hỗ trợ định vị GPS.');
+                        return;
+                    }
+                    if (btn) btn.textContent = '⏳ Đang định vị GPS...';
+                    navigator.geolocation.getCurrentPosition(
+                        function (pos) {
+                            if (btn) btn.textContent = '📍 Lấy vị trí hiện tại (GPS)';
+                            const lat = pos.coords.latitude;
+                            const lng = pos.coords.longitude;
+                            ensureMapInitialized();
+                            if (shippingMap && shippingMarker) {
+                                shippingMap.flyTo([lat, lng], 16, { duration: 0.8 });
+                                shippingMarker.setLatLng([lat, lng]);
+                            }
+                            reverseGeocodeAndFillAddress(lat, lng);
+                        },
+                        function () {
+                            if (btn) btn.textContent = '📍 Lấy vị trí hiện tại (GPS)';
+                            alert('Không thể truy cập GPS. Bạn có thể chạm trực tiếp vào bản đồ hoặc dùng ô tìm kiếm trên bản đồ.');
+                        },
+                        { enableHighAccuracy: true, timeout: 8000 }
+                    );
+                };
+
+                window.searchLocationOnMap = async function () {
+                    const searchInput = document.getElementById('map-search-input');
+                    const query = searchInput ? searchInput.value.trim() : '';
+                    if (!query) return;
+
+                    try {
+                        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(query)}&countrycodes=vn&limit=1&accept-language=vi`);
+                        const results = await res.json();
+                        if (Array.isArray(results) && results.length > 0) {
+                            const lat = parseFloat(results[0].lat);
+                            const lng = parseFloat(results[0].lon);
+                            ensureMapInitialized();
+                            if (shippingMap && shippingMarker) {
+                                shippingMap.flyTo([lat, lng], 16, { duration: 0.8 });
+                                shippingMarker.setLatLng([lat, lng]);
+                            }
+                            reverseGeocodeAndFillAddress(lat, lng);
+                        } else {
+                            alert('Không tìm thấy địa điểm này. Vui lòng thử từ khóa khác hoặc chạm trực tiếp lên bản đồ.');
+                        }
+                    } catch (e) {
+                        alert('Không thể tìm kiếm lúc này, vui lòng chạm trực tiếp vào vị trí trên bản đồ.');
+                    }
+                };
+            });
+        </script>
     </div>
     @endif
 
@@ -740,6 +1042,8 @@
             <div class="space-y-4">
                 @foreach($myOrders as $order)
                     @php
+                        $isQrUnpaid = $order->isQrPayment() && !$order->isPaid();
+                        $isQrPaid = $order->isQrPayment() && $order->isPaid();
                         $statusBadge = [
                             'PENDING' => ['label' => '⏳ Chờ Shop Xác Nhận', 'class' => 'bg-amber-50 text-amber-700 border-amber-200'],
                             'CONFIRMED' => ['label' => '✓ Shop Đã Xác Nhận', 'class' => 'bg-blue-50 text-blue-700 border-blue-200'],
@@ -747,16 +1051,33 @@
                             'COMPLETED' => ['label' => '✨ Giao Thành Công', 'class' => 'bg-emerald-50 text-emerald-700 border-emerald-200'],
                             'CANCELLED' => ['label' => '✕ Đã Hủy', 'class' => 'bg-red-50 text-red-700 border-red-200'],
                         ][$order->status] ?? ['label' => $order->status, 'class' => 'bg-stone-100 text-stone-700'];
+
+                        if ($isQrUnpaid && $order->status !== 'CANCELLED') {
+                            $statusBadge = ['label' => '⏳ Đơn hàng chưa thanh toán thành công', 'class' => 'bg-amber-50 text-amber-800 border-amber-300'];
+                        }
                     @endphp
-                    <div class="p-5 sm:p-6 rounded-3xl border border-sage-100 bg-[#F5FAF7] space-y-4">
+                    <div class="p-5 sm:p-6 rounded-3xl border {{ $isQrUnpaid && $order->status !== 'CANCELLED' ? 'border-amber-200' : 'border-sage-100' }} bg-[#F5FAF7] space-y-4">
                         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-sage-100 pb-3">
-                            <div class="flex items-center gap-3">
+                            <div class="flex flex-wrap items-center gap-3">
                                 <span class="font-mono font-bold text-base text-stone-800">#ORDER-{{ $order->id }}</span>
                                 <span class="text-xs text-stone-400">Đặt lúc: {{ $order->created_at?->format('d/m/Y H:i') }}</span>
+                                @if($isQrPaid)
+                                    <span class="text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                                        ✓ Đã thanh toán QR (Mã GD: {{ $order->transaction_code }})
+                                    </span>
+                                @endif
                             </div>
-                            <span class="text-xs font-bold px-3.5 py-1 rounded-full border {{ $statusBadge['class'] }}">
-                                {{ $statusBadge['label'] }}
-                            </span>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-xs font-bold px-3.5 py-1 rounded-full border {{ $statusBadge['class'] }}">
+                                    {{ $statusBadge['label'] }}
+                                </span>
+                                @if($isQrUnpaid && $order->status !== 'CANCELLED')
+                                    <a href="{{ route('checkout.index', ['success_order_id' => $order->id]) }}"
+                                        class="text-xs font-bold px-3.5 py-1 rounded-full bg-amber-600 hover:bg-amber-700 text-white transition shadow-2xs">
+                                        💳 Quét QR &amp; Xác thực thanh toán →
+                                    </a>
+                                @endif
+                            </div>
                         </div>
 
                         <!-- Danh sách sản phẩm trong đơn -->
