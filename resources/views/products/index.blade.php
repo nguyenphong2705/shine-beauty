@@ -5,93 +5,108 @@
 @section('canonical', route('products.index'))
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8">
     <!-- Header Banner -->
-    <div class="bg-gradient-to-r from-sage-100/70 via-sage-50/50 to-[#F5FAF7] rounded-3xl p-8 sm:p-10 border border-sage-100">
+    <div class="bg-gradient-to-r from-sage-100/70 via-sage-50/50 to-[#F5FAF7] rounded-3xl p-5 sm:p-8 lg:p-10 border border-sage-100">
         <span class="text-xs font-bold uppercase tracking-[0.2em] text-sage-500">Bộ Sưu Tập Chính Hãng</span>
-        <h1 class="font-serif text-3xl sm:text-4xl font-bold text-stone-800 mt-1">Tất Cả Sản Phẩm Mỹ Phẩm & Chăm Sóc Da</h1>
-        <p class="text-sm text-stone-600 mt-2 max-w-2xl">
+        <h1 class="font-serif text-2xl sm:text-4xl font-bold text-stone-800 mt-1">Tất Cả Sản Phẩm Mỹ Phẩm & Chăm Sóc Da</h1>
+        <p class="text-xs sm:text-sm text-stone-600 mt-2 max-w-2xl">
             Sử dụng bộ lọc thông minh theo danh mục, thương hiệu, loại da (Da dầu, Da khô, Da nhạy cảm) và khoảng giá để tìm sản phẩm phù hợp nhất.
         </p>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
         <!-- Sidebar Filter Form (hoạt động cả khi tắt JS: submit GET thông thường) -->
         <aside class="lg:col-span-3">
-            <form id="product-filter-form" action="{{ route('products.index') }}" method="GET" class="bg-white p-6 rounded-3xl border border-sage-100 shadow-xs space-y-6 sticky top-28">
-                <div class="flex items-center justify-between pb-4 border-b border-sage-100">
+            @php
+                $hasActiveFilters = !empty($filters['category']) || !empty($filters['brand']) || !empty($filters['skin_type']) || !empty($filters['min_price']) || !empty($filters['max_price']) || ($filters['sort'] ?? 'newest') !== 'newest';
+            @endphp
+            <form id="product-filter-form" action="{{ route('products.index') }}" method="GET" class="bg-white p-4 sm:p-6 rounded-3xl border border-sage-100 shadow-xs space-y-4 sm:space-y-6 lg:sticky lg:top-28">
+                <div class="flex items-center justify-between pb-3 sm:pb-4 border-b border-sage-100 gap-2">
                     <span class="font-serif font-bold text-stone-800">Bộ Lọc Tìm Kiếm</span>
-                    <a href="{{ route('products.index') }}" data-filter-reset class="text-xs text-sage-600 hover:underline font-medium">Đặt lại</a>
+                    <div class="flex items-center gap-3">
+                        <a href="{{ route('products.index') }}" data-filter-reset class="text-xs text-sage-600 hover:underline font-medium">Đặt lại</a>
+                        <button type="button"
+                                onclick="document.getElementById('mobile-filter-fields').classList.toggle('hidden')"
+                                class="lg:hidden inline-flex items-center gap-1 text-xs font-bold bg-sage-50 hover:bg-sage-100 text-sage-700 border border-sage-200 px-3 py-1.5 rounded-full transition cursor-pointer">
+                            <span>🎛️ Bộ lọc chi tiết</span>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Search Input -->
+                <!-- Search Input (Luôn hiển thị trên mọi thiết bị) -->
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2">Tìm theo tên / Hoạt chất</label>
                     <input type="text" name="search" value="{{ $filters['search'] }}" maxlength="100" placeholder="VD: Niacinamide, BHA, Son..." class="w-full px-3.5 py-2.5 text-sm rounded-2xl border border-sage-200 bg-[#F5FAF7] focus:outline-none focus:ring-2 focus:ring-sage-300">
                 </div>
 
-                <!-- Category Filter (slug) -->
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2">Danh mục mỹ phẩm</label>
-                    <select name="category" class="w-full px-3.5 py-2.5 text-sm rounded-2xl border border-sage-200 bg-[#F5FAF7]">
-                        <option value="">Tất cả danh mục</option>
-                        @foreach($categories as $cat)
-                            <option value="{{ $cat->slug }}" {{ $filters['category'] === $cat->slug ? 'selected' : '' }}>
-                                {{ $cat->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+                <!-- Các trường lọc mở rộng: Trên Mobile/Tablet có thể đóng/mở gọn gàng, trên Desktop luôn hiển thị -->
+                <div id="mobile-filter-fields" class="{{ $hasActiveFilters ? 'block' : 'hidden' }} lg:block space-y-4 sm:space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+                        <!-- Category Filter (slug) -->
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2">Danh mục mỹ phẩm</label>
+                            <select name="category" class="w-full px-3.5 py-2.5 text-sm rounded-2xl border border-sage-200 bg-[#F5FAF7]">
+                                <option value="">Tất cả danh mục</option>
+                                @foreach($categories as $cat)
+                                    <option value="{{ $cat->slug }}" {{ $filters['category'] === $cat->slug ? 'selected' : '' }}>
+                                        {{ $cat->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                <!-- Brand Filter (slug) -->
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2">Thương hiệu</label>
-                    <select name="brand" class="w-full px-3.5 py-2.5 text-sm rounded-2xl border border-sage-200 bg-[#F5FAF7]">
-                        <option value="">Tất cả thương hiệu</option>
-                        @foreach($brands as $b)
-                            @php $brandSlug = \Illuminate\Support\Str::slug($b->name); @endphp
-                            <option value="{{ $brandSlug }}" {{ $filters['brand'] === $brandSlug ? 'selected' : '' }}>
-                                {{ $b->name }} ({{ $b->origin }})
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+                        <!-- Brand Filter (slug) -->
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2">Thương hiệu</label>
+                            <select name="brand" class="w-full px-3.5 py-2.5 text-sm rounded-2xl border border-sage-200 bg-[#F5FAF7]">
+                                <option value="">Tất cả thương hiệu</option>
+                                @foreach($brands as $b)
+                                    @php $brandSlug = \Illuminate\Support\Str::slug($b->name); @endphp
+                                    <option value="{{ $brandSlug }}" {{ $filters['brand'] === $brandSlug ? 'selected' : '' }}>
+                                        {{ $b->name }} ({{ $b->origin }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                <!-- Skin Type Filter -->
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2">Loại da phù hợp</label>
-                    @php $skinOptions = ['Da dầu', 'Da khô', 'Da nhạy cảm', 'Mọi loại da']; @endphp
-                    <select name="skin_type" class="w-full px-3.5 py-2.5 text-sm rounded-2xl border border-sage-200 bg-[#F5FAF7]">
-                        <option value="">Tất cả</option>
-                        @foreach($skinOptions as $skin)
-                            <option value="{{ $skin }}" {{ $filters['skin_type'] === $skin ? 'selected' : '' }}>{{ $skin }}</option>
-                        @endforeach
-                    </select>
-                </div>
+                        <!-- Skin Type Filter -->
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2">Loại da phù hợp</label>
+                            @php $skinOptions = ['Da dầu', 'Da khô', 'Da nhạy cảm', 'Mọi loại da']; @endphp
+                            <select name="skin_type" class="w-full px-3.5 py-2.5 text-sm rounded-2xl border border-sage-200 bg-[#F5FAF7]">
+                                <option value="">Tất cả</option>
+                                @foreach($skinOptions as $skin)
+                                    <option value="{{ $skin }}" {{ $filters['skin_type'] === $skin ? 'selected' : '' }}>{{ $skin }}</option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                <!-- Price Range Filter (min_price / max_price) -->
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2">Khoảng giá (₫)</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <input type="number" name="min_price" min="0" step="10000" value="{{ $filters['min_price'] }}" placeholder="Từ" class="w-full px-3 py-2.5 text-sm rounded-2xl border border-sage-200 bg-[#F5FAF7]">
-                        <input type="number" name="max_price" min="0" step="10000" value="{{ $filters['max_price'] }}" placeholder="Đến" class="w-full px-3 py-2.5 text-sm rounded-2xl border border-sage-200 bg-[#F5FAF7]">
+                        <!-- Sort -->
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2">Sắp xếp</label>
+                            <select name="sort" class="w-full px-3.5 py-2.5 text-sm rounded-2xl border border-sage-200 bg-[#F5FAF7]">
+                                <option value="newest" {{ $filters['sort'] === 'newest' ? 'selected' : '' }}>Mới nhất</option>
+                                <option value="price_asc" {{ $filters['sort'] === 'price_asc' ? 'selected' : '' }}>Giá tăng dần</option>
+                                <option value="price_desc" {{ $filters['sort'] === 'price_desc' ? 'selected' : '' }}>Giá giảm dần</option>
+                                <option value="name_asc" {{ $filters['sort'] === 'name_asc' ? 'selected' : '' }}>Tên A → Z</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Sort -->
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2">Sắp xếp</label>
-                    <select name="sort" class="w-full px-3.5 py-2.5 text-sm rounded-2xl border border-sage-200 bg-[#F5FAF7]">
-                        <option value="newest" {{ $filters['sort'] === 'newest' ? 'selected' : '' }}>Mới nhất</option>
-                        <option value="price_asc" {{ $filters['sort'] === 'price_asc' ? 'selected' : '' }}>Giá tăng dần</option>
-                        <option value="price_desc" {{ $filters['sort'] === 'price_desc' ? 'selected' : '' }}>Giá giảm dần</option>
-                        <option value="name_asc" {{ $filters['sort'] === 'name_asc' ? 'selected' : '' }}>Tên A → Z</option>
-                    </select>
-                </div>
+                    <!-- Price Range Filter (min_price / max_price) -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2">Khoảng giá (₫)</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="number" name="min_price" min="0" step="10000" value="{{ $filters['min_price'] }}" placeholder="Từ" class="w-full px-3 py-2.5 text-sm rounded-2xl border border-sage-200 bg-[#F5FAF7]">
+                            <input type="number" name="max_price" min="0" step="10000" value="{{ $filters['max_price'] }}" placeholder="Đến" class="w-full px-3 py-2.5 text-sm rounded-2xl border border-sage-200 bg-[#F5FAF7]">
+                        </div>
+                    </div>
 
-                <button type="submit" class="w-full bg-sage-500 hover:bg-sage-600 text-white font-semibold py-3 rounded-full text-sm shadow-md shadow-sage-200 transition">
-                    Áp Dụng Bộ Lọc
-                </button>
+                    <button type="submit" class="w-full bg-sage-500 hover:bg-sage-600 text-white font-semibold py-3 rounded-full text-sm shadow-md shadow-sage-200 transition">
+                        Áp Dụng Bộ Lọc
+                    </button>
+                </div>
             </form>
         </aside>
 

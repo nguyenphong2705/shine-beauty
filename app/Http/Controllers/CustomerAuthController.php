@@ -1155,4 +1155,113 @@ class CustomerAuthController extends Controller
         return redirect()->route('checkout.index')
             ->with('success', "Đã lưu và áp dụng mã giảm giá {$coupon->code} (-{$coupon->discount_percent}%) vào giỏ hàng của bạn!");
     }
+
+    /**
+     * Khách hàng hủy đơn hàng đã đặt.
+     *
+     * Điều kiện bảo mật bắt buộc:
+     * - Phải đăng nhập tài khoản khách hàng.
+     * - Số điện thoại của tài khoản đang đăng nhập phải trùng khớp với số điện thoại chính chủ trên đơn hàng.
+     * - Đơn hàng đang ở trạng thái chờ xác nhận (PENDING) hoặc chưa giao hàng và chưa thanh toán.
+     */
+    public function cancelOrder(Request $request, Order $order): RedirectResponse|JsonResponse
+    {
+        if (! Auth::check()) {
+            $msg = 'Vui lòng đăng nhập bằng tài khoản có số điện thoại chính chủ đặt hàng để hủy đơn hàng.';
+            if ($request->wantsJson()) {
+                return response()->json(['ok' => false, 'code' => 'UNAUTHENTICATED', 'message' => $msg], 401);
+            }
+            return redirect()->route('customer.login')->with('error', $msg);
+        }
+
+        $user = Auth::user();
+        $userPhone = \App\Services\SmsGatewayService::normalizeVietnamPhone((string) ($user->phone ?? ''));
+        $orderPhone = \App\Services\SmsGatewayService::normalizeVietnamPhone((string) ($order->phone ?? ''));
+
+        if ($userPhone === '' || $orderPhone === '' || $userPhone !== $orderPhone) {
+            $msg = "Không thể hủy đơn hàng #ORDER-{$order->id}: Bạn phải đăng nhập đúng tài khoản có số điện thoại chính chủ của đơn hàng ({$order->phone}) mới được phép hủy đơn này.";
+            if ($request->wantsJson()) {
+                return response()->json(['ok' => false, 'code' => 'PHONE_MISMATCH_FORBIDDEN', 'message' => $msg], 403);
+            }
+            return back()->with('error', $msg);
+        }
+
+        if ($order->status === 'CANCELLED') {
+            $msg = "Đơn hàng #ORDER-{$order->id} đã ở trạng thái hủy trước đó.";
+            if ($request->wantsJson()) {
+                return response()->json(['ok' => false, 'code' => 'ALREADY_CANCELLED', 'message' => $msg], 422);
+            }
+            return back()->with('error', $msg);
+        }
+
+        if (in_array($order->status, ['SHIPPING', 'COMPLETED'], true)) {
+            $msg = "Đơn hàng #ORDER-{$order->id} đang trên đường giao hoặc đã hoàn thành nên không thể hủy.";
+            if ($request->wantsJson()) {
+                return response()->json(['ok' => false, 'code' => 'ORDER_NOT_CANCELLABLE', 'message' => $msg], 422);
+            }
+            return back()->with('error', $msg);
+        }
+
+        if ($order->isPaid()) {
+            $msg = "Đơn hàng #ORDER-{$order->id} đã thanh toán chuyển khoản thành công nên không thể tự hủy. Vui lòng liên hệ hotline CSKH để được hỗ trợ.";
+            if ($request->wantsJson()) {
+                return response()->json(['ok' => false, 'code' => 'ORDER_ALREADY_PAID', 'message' => $msg], 422);
+            }
+            return back()->with('error', $msg);
+        }
+
+        $cancelReason = trim((string) $request->input('cancel_reason', 'Khách hàng chủ động hủy đơn (đã xác thực đúng SĐT chính chủ)'));
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($order, $user, $cancelReason): void {
+            /** @var Order|null $locked */
+            $locked = Order::with(['items', 'payment'])->lockForUpdate()->find($order->id);
+            if (! $locked || $locked->status === 'CANCELLED') {
+                return;
+            }
+
+            foreach ($locked->items as $item) {
+                if ($item->product_id && $item->quantity > 0) {
+                    Product::whereKey($item->product_id)->increment('stock', (int) $item->quantity);
+                }
+            }
+
+            $updatedNote = trim(($locked->note ? $locked->note . ' | ' : '') . "[Khách hủy đơn - SĐT {$locked->phone}: {$cancelReason}]");
+
+            $locked->update([
+                'status'         => 'CANCELLED',
+                'order_status'   => 'CANCELLED',
+                'payment_status' => $locked->payment_status === 'PAID' ? 'PAID' : 'CANCELLED',
+                'note'           => $updatedNote,
+            ]);
+
+            if ($locked->payment && $locked->payment->status !== 'PAID') {
+                $history = is_array($locked->payment->status_history) ? $locked->payment->status_history : [];
+                $history[] = [
+                    'from_status' => $locked->payment->status,
+                    'to_status'   => 'CANCELLED',
+                    'reason'      => $cancelReason,
+                    'actor_id'    => $user->id,
+                    'actor_name'  => $user->name . ' (' . $user->phone . ')',
+                    'changed_at'  => now()->toIso8601String(),
+                ];
+                $locked->payment->update([
+                    'status'         => 'CANCELLED',
+                    'status_history' => $history,
+                ]);
+            }
+        });
+
+        $successMsg = "Đã hủy thành công đơn hàng #ORDER-{$order->id} (SĐT chính chủ: {$order->phone}) và hoàn lại tồn kho sản phẩm.";
+        if ($request->wantsJson()) {
+            return response()->json([
+                'ok'       => true,
+                'code'     => 'ORDER_CANCELLED',
+                'order_id' => $order->id,
+                'status'   => 'CANCELLED',
+                'message'  => $successMsg,
+            ]);
+        }
+
+        return back()->with('success', $successMsg)->with('order_cancelled_alert', $successMsg);
+    }
 }

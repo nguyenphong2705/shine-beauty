@@ -50,4 +50,26 @@ return [
         'match_prefix' => env('SEPAY_MATCH_PREFIX', 'DH'),
     ],
 
+    'sms' => [
+        'driver' => env('SMS_DRIVER', 'esms'), // Hỗ trợ: 'esms', 'zalo_zns', 'twilio', 'log'
+        'esms' => [
+            'endpoint' => env('ESMS_ENDPOINT', 'https://rest.esms.vn/MainService.svc/json/SendMultipleMessage_V4_post_json/'),
+            'api_key' => env('ESMS_API_KEY', ''),
+            'secret_key' => env('ESMS_SECRET_KEY', ''),
+            'brandname' => env('ESMS_BRANDNAME', 'SHINEBEAUTY'),
+            'sms_type' => (int) env('ESMS_SMS_TYPE', 2), // 2 = CSKH Brandname
+            'sandbox' => (int) env('ESMS_SANDBOX', 0),
+        ],
+        'zalo_zns' => [
+            'endpoint' => env('ZALO_ZNS_ENDPOINT', 'https://business.openapi.zalo.me/message/template'),
+            'access_token' => env('ZALO_ZNS_ACCESS_TOKEN', ''),
+            'template_id' => env('ZALO_ZNS_OTP_TEMPLATE_ID', ''),
+        ],
+        'twilio' => [
+            'account_sid' => env('TWILIO_ACCOUNT_SID', ''),
+            'auth_token' => env('TWILIO_AUTH_TOKEN', ''),
+            'from' => env('TWILIO_FROM', ''),
+        ],
+    ],
+
 ];

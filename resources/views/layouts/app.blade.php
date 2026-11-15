@@ -84,12 +84,23 @@
     </script>
     @stack('structured_data')
     <style>
+        html, body {
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
         body, h1, h2, h3, h4, h5, h6, input, button, select, textarea {
             font-family: 'Roboto', sans-serif;
         }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
-<body class="font-sans antialiased min-h-screen flex flex-col bg-[#F5FAF7] text-stone-800">
+<body class="font-sans antialiased min-h-screen flex flex-col bg-[#F5FAF7] text-stone-800 overflow-x-hidden">
     @include('partials.loading-animation')
     @php
         $cart = session('cart', []);
@@ -110,23 +121,23 @@
            Nút Hồ sơ hiển thị Tên khách hàng và Nút mở Giỏ hàng nhanh.
          ===================================================================== -->
     <header role="banner" class="sticky top-0 z-40 bg-[#F5FAF7]/95 backdrop-blur-md border-b border-sage-100">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-20">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 sm:h-20 gap-2">
                 <!-- Logo Thương Hiệu -->
-                <a href="{{ route('home') }}" class="flex items-center gap-3 group" aria-label="SHINE Beauty - Trang chủ">
-                    <img src="{{ asset('logo-menu.svg') }}?v=1" alt="SHINE Beauty Logo" width="64" height="64" class="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-xs group-hover:scale-105 transition">
-                    <div>
-                        <span class="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-stone-800">
+                <a href="{{ route('home') }}" class="flex items-center gap-2 sm:gap-3 group min-w-0 flex-shrink-0" aria-label="SHINE Beauty - Trang chủ">
+                    <img src="{{ asset('logo-menu.svg') }}?v=1" alt="SHINE Beauty Logo" width="64" height="64" class="w-10 h-10 sm:w-14 sm:h-14 lg:w-16 lg:h-16 object-contain drop-shadow-xs group-hover:scale-105 transition flex-shrink-0">
+                    <div class="min-w-0">
+                        <span class="font-serif text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight text-stone-800 block leading-tight truncate">
                             SHINE <span class="text-sage-500 font-normal italic">Beauty</span>
                         </span>
-                        <p class="text-[10px] uppercase tracking-[0.2em] text-stone-400 -mt-1">
+                        <p class="text-[9px] sm:text-[10px] uppercase tracking-[0.18em] sm:tracking-[0.2em] text-stone-400 -mt-0.5 truncate">
                             Luxury Cosmetics
                         </p>
                     </div>
                 </a>
 
-                <!-- Menu Điều Hướng Chính (Desktop Navigation) -->
-                <nav aria-label="Điều hướng chính" class="hidden md:flex items-center gap-5 text-sm font-medium">
+                <!-- Menu Điều Hướng Chính (Desktop Navigation: >= 1024px) -->
+                <nav aria-label="Điều hướng chính" class="hidden lg:flex items-center gap-4 xl:gap-6 text-sm font-medium flex-shrink-0">
                     <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'text-sage-600 font-semibold' : 'text-stone-700 hover:text-sage-500' }}">{{ __('Trang Chủ') }}</a>
                     <a href="{{ route('products.index') }}" class="{{ request()->routeIs('products.*') && !request('category') ? 'text-sage-600 font-semibold' : 'text-stone-700 hover:text-sage-500' }}">{{ __('Sản Phẩm') }}</a>
                     <a href="{{ route('products.index', ['category' => 'cham-soc-da']) }}" class="{{ request('category') === 'cham-soc-da' ? 'text-sage-600 font-semibold' : 'text-stone-700 hover:text-sage-500' }}">{{ __('Chăm Sóc Da') }}</a>
@@ -134,14 +145,14 @@
                     <a href="{{ route('orders.track') }}" class="{{ request()->routeIs('orders.track') ? 'text-sage-600 font-semibold' : 'text-stone-700 hover:text-sage-500' }}">{{ __('Tra Cứu Đơn Hàng') }}</a>
                 </nav>
 
-                <!-- Cụm Chức Năng Phải: Ngôn Ngữ (VI/EN) + Hồ Sơ Khách Hàng (Hiển thị Tên) + Giỏ Hàng -->
-                <div class="flex items-center gap-2 sm:gap-2.5">
+                <!-- Cụm Chức Năng Phải: Ngôn Ngữ (VI/EN) + Hồ Sơ Khách Hàng + Giỏ Hàng + Nút Menu Mobile/Tablet -->
+                <div class="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
                     <!-- Bộ chuyển đổi ngôn ngữ VI / EN -->
-                    <div class="inline-flex items-center rounded-full bg-white border border-sage-200 p-0.5 shadow-2xs text-xs font-bold" role="group" aria-label="Chuyển đổi ngôn ngữ">
+                    <div class="inline-flex items-center rounded-full bg-white border border-sage-200 p-0.5 shadow-2xs text-[11px] sm:text-xs font-bold" role="group" aria-label="Chuyển đổi ngôn ngữ">
                         <a href="{{ route('lang.switch', 'vi') }}"
                            title="Tiếng Việt (Mặc định)"
-                           class="px-2.5 py-1.5 rounded-full transition flex items-center gap-1.5 {{ app()->getLocale() === 'vi' ? 'bg-[#DA251D] text-white shadow-2xs' : 'text-stone-600 hover:text-[#DA251D]' }}">
-                            <svg class="w-4 h-3 rounded-[2px] shadow-2xs flex-shrink-0 {{ app()->getLocale() === 'vi' ? 'ring-1 ring-white/60' : '' }}" viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg">
+                           class="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-full transition flex items-center gap-1 {{ app()->getLocale() === 'vi' ? 'bg-[#DA251D] text-white shadow-2xs' : 'text-stone-600 hover:text-[#DA251D]' }}">
+                            <svg class="w-3.5 h-2.5 sm:w-4 sm:h-3 rounded-[2px] shadow-2xs flex-shrink-0 {{ app()->getLocale() === 'vi' ? 'ring-1 ring-white/60' : '' }}" viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg">
                                 <rect width="30" height="20" fill="#DA251D"/>
                                 <polygon points="15,4 16.47,8.52 21.22,8.52 17.38,11.31 18.85,15.83 15,13.04 11.15,15.83 12.62,11.31 8.78,8.52 13.53,8.52" fill="#FFFF00"/>
                             </svg>
@@ -149,8 +160,8 @@
                         </a>
                         <a href="{{ route('lang.switch', 'en') }}"
                            title="Switch to English (Global)"
-                           class="px-2.5 py-1.5 rounded-full transition flex items-center gap-1.5 {{ app()->getLocale() === 'en' ? 'bg-[#0284C7] text-white shadow-2xs' : 'text-stone-600 hover:text-[#0284C7]' }}">
-                            <svg class="w-4 h-3 rounded-[2px] shadow-2xs flex-shrink-0 {{ app()->getLocale() === 'en' ? 'ring-1 ring-white/60' : '' }}" viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg">
+                           class="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-full transition flex items-center gap-1 {{ app()->getLocale() === 'en' ? 'bg-[#0284C7] text-white shadow-2xs' : 'text-stone-600 hover:text-[#0284C7]' }}">
+                            <svg class="w-3.5 h-2.5 sm:w-4 sm:h-3 rounded-[2px] shadow-2xs flex-shrink-0 {{ app()->getLocale() === 'en' ? 'ring-1 ring-white/60' : '' }}" viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg">
                                 <rect width="30" height="20" fill="#0284C7"/>
                                 <circle cx="15" cy="10" r="6.5" fill="none" stroke="#FFFFFF" stroke-width="1.3"/>
                                 <ellipse cx="15" cy="10" rx="3.2" ry="6.5" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
@@ -161,17 +172,17 @@
                         </a>
                     </div>
 
-                    <!-- Nút Hồ sơ tài khoản khách hàng (Đặt kế bên chuyển đổi ngôn ngữ, hiển thị Họ và tên thay vì username) -->
+                    <!-- Nút Hồ sơ tài khoản khách hàng -->
                     @if(auth()->check() && !auth()->user()->is_admin)
                         <a href="{{ route('customer.account') }}"
-                           class="inline-flex items-center gap-1.5 text-xs font-bold {{ request()->routeIs('customer.*') ? 'bg-sage-600' : 'bg-sage-500 hover:bg-sage-600' }} text-white px-3 sm:px-3.5 py-2 rounded-full transition shadow-xs"
+                           class="inline-flex items-center gap-1.5 text-xs font-bold {{ request()->routeIs('customer.*') ? 'bg-sage-600' : 'bg-sage-500 hover:bg-sage-600' }} text-white px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full transition shadow-xs"
                            title="Tài khoản của {{ auth()->user()->name }}">
                             <span class="text-sm">👤</span>
-                            <span class="max-w-[110px] sm:max-w-[160px] md:max-w-[200px] truncate">{{ auth()->user()->name }}</span>
+                            <span class="hidden sm:inline max-w-[110px] md:max-w-[160px] truncate">{{ auth()->user()->name }}</span>
                         </a>
                     @else
                         <button type="button" onclick="openAuthModal('login')"
-                                class="inline-flex items-center gap-1.5 text-xs font-bold bg-sage-100 hover:bg-sage-200 text-sage-800 px-3 sm:px-3.5 py-2 rounded-full transition border border-sage-200 cursor-pointer"
+                                class="inline-flex items-center gap-1.5 text-xs font-bold bg-sage-100 hover:bg-sage-200 text-sage-800 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full transition border border-sage-200 cursor-pointer"
                                 title="{{ __('Đăng Nhập / Đăng Ký') }}">
                             <span class="text-sm">👤</span>
                             <span class="hidden sm:inline">{{ __('Đăng Nhập / Đăng Ký') }}</span>
@@ -179,13 +190,78 @@
                     @endif
 
                     <!-- Nút mở Ngăn kéo Giỏ hàng (Slide-over Cart Drawer) -->
-                    <button type="button" onclick="document.getElementById('cart-drawer').classList.remove('hidden')" class="relative flex items-center gap-2 bg-sage-50 hover:bg-sage-100 text-sage-700 px-4 py-2.5 rounded-full font-medium text-sm transition shadow-sm border border-sage-200/60 cursor-pointer">
-                        <span>🛍️ {{ __('Giỏ Hàng') }}</span>
-                        <span class="bg-sage-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                    <button type="button" onclick="document.getElementById('cart-drawer').classList.remove('hidden')" class="relative flex items-center gap-1.5 sm:gap-2 bg-sage-50 hover:bg-sage-100 text-sage-700 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-full font-medium text-xs sm:text-sm transition shadow-sm border border-sage-200/60 cursor-pointer">
+                        <span>🛍️</span>
+                        <span class="hidden sm:inline">{{ __('Giỏ Hàng') }}</span>
+                        <span class="bg-sage-500 text-white text-[11px] sm:text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
                             {{ $cartCount }}
                         </span>
                     </button>
+
+                    <!-- Nút mở Menu Mobile & Tablet (< 1024px) -->
+                    <button type="button"
+                            id="mobile-menu-toggle"
+                            onclick="document.getElementById('mobile-nav-drawer').classList.toggle('hidden')"
+                            aria-label="Mở menu điều hướng"
+                            class="lg:hidden inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white hover:bg-sage-50 text-stone-700 border border-sage-200 shadow-2xs transition cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
                 </div>
+            </div>
+
+            <!-- Thanh Điều Hướng Nhanh Trên Mobile & Tablet (< 1024px) - Cuộn ngang mượt mà -->
+            <nav aria-label="Điều hướng nhanh trên thiết bị di động" class="lg:hidden flex items-center gap-2 overflow-x-auto no-scrollbar py-2 border-t border-sage-100/80 text-xs font-semibold whitespace-nowrap">
+                <a href="{{ route('home') }}" class="px-3 py-1.5 rounded-full transition {{ request()->routeIs('home') ? 'bg-sage-500 text-white shadow-2xs' : 'bg-white text-stone-700 border border-sage-100 hover:bg-sage-50' }}">
+                    {{ __('Trang Chủ') }}
+                </a>
+                <a href="{{ route('products.index') }}" class="px-3 py-1.5 rounded-full transition {{ request()->routeIs('products.*') && !request('category') ? 'bg-sage-500 text-white shadow-2xs' : 'bg-white text-stone-700 border border-sage-100 hover:bg-sage-50' }}">
+                    {{ __('Sản Phẩm') }}
+                </a>
+                <a href="{{ route('products.index', ['category' => 'cham-soc-da']) }}" class="px-3 py-1.5 rounded-full transition {{ request('category') === 'cham-soc-da' ? 'bg-sage-500 text-white shadow-2xs' : 'bg-white text-stone-700 border border-sage-100 hover:bg-sage-50' }}">
+                    {{ __('Chăm Sóc Da') }}
+                </a>
+                <a href="{{ route('blog.index') }}" class="px-3 py-1.5 rounded-full transition {{ request()->routeIs('blog.*') ? 'bg-sage-500 text-white shadow-2xs' : 'bg-white text-stone-700 border border-sage-100 hover:bg-sage-50' }}">
+                    {{ __('Blog Làm Đẹp') }}
+                </a>
+                <a href="{{ route('orders.track') }}" class="px-3 py-1.5 rounded-full transition {{ request()->routeIs('orders.track') ? 'bg-sage-500 text-white shadow-2xs' : 'bg-white text-stone-700 border border-sage-100 hover:bg-sage-50' }}">
+                    {{ __('Tra Cứu Đơn Hàng') }}
+                </a>
+            </nav>
+
+            <!-- Menu Mở Rộng Cho Mobile & Tablet (#mobile-nav-drawer) -->
+            <div id="mobile-nav-drawer" class="hidden lg:hidden py-3 border-t border-sage-200/80 space-y-2">
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs font-semibold">
+                    <a href="{{ route('home') }}" class="p-2.5 rounded-xl bg-white border border-sage-100 text-stone-800 hover:bg-sage-50 flex items-center gap-2">
+                        <span>🏠</span> <span>{{ __('Trang Chủ') }}</span>
+                    </a>
+                    <a href="{{ route('products.index') }}" class="p-2.5 rounded-xl bg-white border border-sage-100 text-stone-800 hover:bg-sage-50 flex items-center gap-2">
+                        <span>✨</span> <span>{{ __('Tất Cả Sản Phẩm') }}</span>
+                    </a>
+                    <a href="{{ route('products.index', ['category' => 'cham-soc-da']) }}" class="p-2.5 rounded-xl bg-white border border-sage-100 text-stone-800 hover:bg-sage-50 flex items-center gap-2">
+                        <span>🌿</span> <span>{{ __('Chăm Sóc Da') }}</span>
+                    </a>
+                    <a href="{{ route('products.index', ['category' => 'trang-diem']) }}" class="p-2.5 rounded-xl bg-white border border-sage-100 text-stone-800 hover:bg-sage-50 flex items-center gap-2">
+                        <span>💄</span> <span>Trang Điểm</span>
+                    </a>
+                    <a href="{{ route('blog.index') }}" class="p-2.5 rounded-xl bg-white border border-sage-100 text-stone-800 hover:bg-sage-50 flex items-center gap-2">
+                        <span>📖</span> <span>{{ __('Blog Làm Đẹp') }}</span>
+                    </a>
+                    <a href="{{ route('orders.track') }}" class="p-2.5 rounded-xl bg-white border border-sage-100 text-stone-800 hover:bg-sage-50 flex items-center gap-2">
+                        <span>📦</span> <span>{{ __('Tra Cứu Đơn Hàng') }}</span>
+                    </a>
+                </div>
+                @if(auth()->check() && !auth()->user()->is_admin)
+                    <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-sage-100 text-xs">
+                        <a href="{{ route('customer.account') }}" class="font-bold text-sage-700 hover:underline">
+                            👤 Hồ sơ: {{ auth()->user()->name }} →
+                        </a>
+                        <a href="{{ route('customer.wishlist') }}" class="font-bold text-red-500 hover:underline">
+                            ❤️ Yêu thích ({{ count($wishlistProductIds ?? []) }})
+                        </a>
+                    </div>
+                @endif
             </div>
         </div>
     </header>
@@ -492,9 +568,36 @@
                                         </div>
                                         <div>
                                             <label class="block text-[11px] font-semibold uppercase tracking-wider text-stone-600 mb-1">Số điện thoại *</label>
-                                            <input type="text" name="phone" required value="{{ old('phone') }}" placeholder="Số điện thoại *"
-                                                class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-sage-200 bg-[#F5FAF7] focus:bg-white focus:outline-none focus:ring-2 focus:ring-sage-400">
+                                            <div class="flex gap-1.5">
+                                                <input type="text" id="reg-phone-input" name="phone" required value="{{ old('phone') }}" placeholder="Số điện thoại *"
+                                                    class="flex-1 min-w-0 px-3 py-2.5 text-sm rounded-xl border border-sage-200 bg-[#F5FAF7] focus:bg-white focus:outline-none focus:ring-2 focus:ring-sage-400">
+                                                <button type="button" id="btn-send-reg-otp" onclick="sendRegistrationOtp()"
+                                                    class="px-3 py-2 rounded-xl bg-stone-900 hover:bg-sage-600 text-white font-bold text-[11px] whitespace-nowrap transition cursor-pointer">
+                                                    📲 Gửi OTP
+                                                </button>
+                                            </div>
                                         </div>
+                                    </div>
+
+                                    <!-- Khung nhập và xác thực OTP số điện thoại (3 phút, tối đa 5 lần thử) -->
+                                    <div id="reg-otp-box" class="hidden p-3 rounded-xl border border-sage-200 bg-sage-50/70 space-y-2">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span id="reg-otp-status-msg" class="text-[11px] font-semibold text-sage-800">
+                                                Nhập mã OTP 6 số (hiệu lực 3 phút):
+                                            </span>
+                                            <span id="reg-otp-verified-badge" class="hidden text-[11px] font-bold bg-emerald-600 text-white px-2.5 py-0.5 rounded-full">
+                                                ✓ Đã xác thực OTP
+                                            </span>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <input type="text" id="reg-otp-code-input" maxlength="6" placeholder="Nhập 6 chữ số OTP..."
+                                                class="flex-1 px-3 py-2 text-xs font-mono font-bold tracking-widest rounded-lg border border-sage-300 bg-white focus:outline-none">
+                                            <button type="button" id="btn-verify-reg-otp" onclick="verifyRegistrationOtp()"
+                                                class="px-3.5 py-2 rounded-lg bg-sage-600 hover:bg-sage-700 text-white font-bold text-xs transition cursor-pointer">
+                                                Xác thực OTP
+                                            </button>
+                                        </div>
+                                        <input type="hidden" name="verification_token" id="reg-otp-verification-token" value="">
                                     </div>
 
                                     <div>
@@ -545,6 +648,116 @@
                 modal.classList.add('hidden');
                 modal.classList.remove('flex');
                 document.body.style.overflow = '';
+            }
+
+            let regOtpCooldownInterval = null;
+            async function sendRegistrationOtp() {
+                const phoneInput = document.getElementById('reg-phone-input');
+                const btnSend = document.getElementById('btn-send-reg-otp');
+                const otpBox = document.getElementById('reg-otp-box');
+                const statusMsg = document.getElementById('reg-otp-status-msg');
+                const otpInput = document.getElementById('reg-otp-code-input');
+                if (!phoneInput || !phoneInput.value.trim()) {
+                    alert('Vui lòng nhập số điện thoại trước khi yêu cầu gửi mã OTP.');
+                    return;
+                }
+
+                btnSend.disabled = true;
+                try {
+                    const res = await fetch('/api/auth/otp/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify({ phone: phoneInput.value.trim() })
+                    });
+                    const data = await res.json();
+                    if (otpBox) otpBox.classList.remove('hidden');
+
+                    if (!res.ok || !data.ok) {
+                        if (statusMsg) {
+                            statusMsg.textContent = '⚠ ' + (data.message || 'Không thể gửi mã OTP.');
+                            statusMsg.className = 'text-[11px] font-semibold text-red-600';
+                        }
+                        if (data.retry_after) {
+                            startRegOtpCooldown(btnSend, parseInt(data.retry_after, 10));
+                        } else {
+                            btnSend.disabled = false;
+                        }
+                        return;
+                    }
+
+                    let msg = '✓ ' + data.message;
+                    if (data.dev_otp_preview) {
+                        msg += ' (Mã test Dev: ' + data.dev_otp_preview + ')';
+                        if (otpInput) otpInput.value = data.dev_otp_preview;
+                    }
+                    if (statusMsg) {
+                        statusMsg.textContent = msg;
+                        statusMsg.className = 'text-[11px] font-semibold text-sage-800';
+                    }
+                    startRegOtpCooldown(btnSend, parseInt(data.cooldown_seconds || 60, 10));
+                } catch (e) {
+                    btnSend.disabled = false;
+                    alert('Lỗi kết nối khi gửi mã OTP.');
+                }
+            }
+
+            function startRegOtpCooldown(btn, seconds) {
+                if (regOtpCooldownInterval) clearInterval(regOtpCooldownInterval);
+                let remaining = seconds;
+                btn.disabled = true;
+                btn.textContent = 'Đợi ' + remaining + 's';
+                regOtpCooldownInterval = setInterval(() => {
+                    remaining--;
+                    if (remaining <= 0) {
+                        clearInterval(regOtpCooldownInterval);
+                        btn.disabled = false;
+                        btn.textContent = '📲 Gửi lại OTP';
+                    } else {
+                        btn.textContent = 'Đợi ' + remaining + 's';
+                    }
+                }, 1000);
+            }
+
+            async function verifyRegistrationOtp() {
+                const phoneInput = document.getElementById('reg-phone-input');
+                const otpInput = document.getElementById('reg-otp-code-input');
+                const statusMsg = document.getElementById('reg-otp-status-msg');
+                const verifiedBadge = document.getElementById('reg-otp-verified-badge');
+                const tokenInput = document.getElementById('reg-otp-verification-token');
+
+                if (!phoneInput || !otpInput || !otpInput.value.trim()) {
+                    alert('Vui lòng nhập mã OTP 6 chữ số.');
+                    return;
+                }
+
+                try {
+                    const res = await fetch('/api/auth/otp/verify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify({
+                            phone: phoneInput.value.trim(),
+                            otp: otpInput.value.trim()
+                        })
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.ok) {
+                        if (statusMsg) {
+                            statusMsg.textContent = '⚠ ' + (data.message || 'Mã OTP không chính xác.');
+                            statusMsg.className = 'text-[11px] font-semibold text-red-600';
+                        }
+                        return;
+                    }
+                    if (statusMsg) {
+                        statusMsg.textContent = '✓ ' + data.message;
+                        statusMsg.className = 'text-[11px] font-semibold text-emerald-700';
+                    }
+                    if (verifiedBadge) verifiedBadge.classList.remove('hidden');
+                    if (tokenInput && data.verification_token) {
+                        tokenInput.value = data.verification_token;
+                    }
+                } catch (e) {
+                    alert('Lỗi kết nối khi xác thực mã OTP.');
+                }
             }
 
             function switchAuthTab(tab) {

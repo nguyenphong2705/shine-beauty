@@ -75,7 +75,7 @@
                             </div>
                         @endif
 
-                        <div class="border-t border-sage-50 pt-3 flex items-center justify-between">
+                        <div class="border-t border-sage-50 pt-3 flex flex-wrap items-center justify-between gap-3">
                             <div class="text-xs text-stone-500">
                                 {{ $order->items->count() }} sản phẩm • {{ $pmLabel }}
                                 @if($order->coupon_code)
@@ -86,10 +86,72 @@
                                 Tổng thanh toán: {{ number_format($order->total_amount, 0, ',', '.') }}₫
                             </div>
                         </div>
+
+                        @php
+                            $canCancelTrackOrder = in_array($order->status, ['PENDING', 'CONFIRMED'], true) && !$order->isPaid();
+                            $loggedUserPhone = auth()->check()
+                                ? \App\Services\SmsGatewayService::normalizeVietnamPhone((string) (auth()->user()->phone ?? ''))
+                                : '';
+                            $trackOrderPhone = \App\Services\SmsGatewayService::normalizeVietnamPhone((string) ($order->phone ?? ''));
+                            $isTrackPhoneOwner = auth()->check() && $loggedUserPhone !== '' && $loggedUserPhone === $trackOrderPhone;
+                        @endphp
+                        @if($canCancelTrackOrder)
+                            <div class="pt-3 border-t border-dashed border-red-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-red-50/60 px-4 py-3 rounded-2xl">
+                                <div class="flex items-start sm:items-center gap-2 text-xs text-red-700">
+                                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-100 text-red-600 font-bold flex-shrink-0">!</span>
+                                    <span>
+                                        <strong>Lưu ý hủy đơn:</strong> Phải đăng nhập đúng tài khoản có SĐT chính chủ (<strong>{{ $order->phone }}</strong>) mới hủy được đơn hàng này.
+                                    </span>
+                                </div>
+
+                                @if($isTrackPhoneOwner)
+                                    <form action="{{ route('customer.orders.cancel', $order) }}" method="POST"
+                                          onsubmit="return confirmTrackCancelOrder(event, {{ $order->id }}, '{{ addslashes($order->phone) }}', true, true)"
+                                          class="flex-shrink-0">
+                                        @csrf
+                                        <input type="hidden" name="cancel_reason" value="Khách hàng hủy đơn từ trang Tra cứu đơn hàng (đã xác thực đúng SĐT chính chủ)">
+                                        <button type="submit"
+                                                class="inline-flex items-center gap-1.5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full shadow-xs transition cursor-pointer">
+                                            ✕ Hủy Đơn Hàng
+                                        </button>
+                                    </form>
+                                @else
+                                    <button type="button"
+                                            onclick="confirmTrackCancelOrder(event, {{ $order->id }}, '{{ addslashes($order->phone) }}', {{ auth()->check() ? 'true' : 'false' }}, false)"
+                                            class="inline-flex items-center gap-1.5 text-xs font-bold bg-white hover:bg-red-100 text-red-600 border border-red-300 px-4 py-2 rounded-full shadow-2xs transition cursor-pointer flex-shrink-0">
+                                        ✕ Hủy Đơn Hàng
+                                    </button>
+                                @endif
+                            </div>
+                        @endif
                     </div>
                 @endforeach
             </div>
         @endif
     @endif
 </div>
+
+<script>
+    function confirmTrackCancelOrder(event, orderId, orderPhone, isLoggedIn, isOwnerPhoneMatched) {
+        if (!isLoggedIn) {
+            event.preventDefault();
+            alert('⚠️ Thông báo Hủy Đơn Hàng:\nVui lòng đăng nhập tài khoản có số điện thoại chính chủ (' + orderPhone + ') để hủy đơn hàng #ORDER-' + orderId + '!');
+            if (typeof openAuthModal === 'function') {
+                openAuthModal('login');
+            }
+            return false;
+        }
+        if (!isOwnerPhoneMatched) {
+            event.preventDefault();
+            alert('⚠️ Không thể hủy đơn hàng:\nTài khoản bạn đang đăng nhập không trùng với số điện thoại chính chủ của đơn hàng (' + orderPhone + '). Chỉ chính chủ SĐT đặt hàng mới có thể hủy đơn!');
+            return false;
+        }
+        const ok = confirm('⚠️ Xác nhận Hủy Đơn Hàng #ORDER-' + orderId + ' (SĐT chính chủ: ' + orderPhone + '):\n\nBạn có chắc chắn muốn hủy đơn hàng này không?');
+        if (!ok) {
+            event.preventDefault();
+            return false;
+        }
+        return true;
+    }
+</script>
 @endsection

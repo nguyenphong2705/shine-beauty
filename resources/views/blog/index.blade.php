@@ -5,12 +5,12 @@
 @section('canonical', route('blog.index'))
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-8 sm:space-y-10">
     <!-- 1. THANH CHUYÊN MỤC BLOG (2/3 BÊN TRÁI) & THANH TÌM KIẾM (1/3 BÊN PHẢI, NGANG DÒNG DANH MỤC ĐẦU TIÊN) -->
-    <section class="bg-white rounded-3xl border border-sage-100 p-5 sm:p-6 shadow-sm space-y-4">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
-            <!-- Bên trái (2/3 = 8/12 cột): Danh mục Blog căn thẳng 1 hàng ngang -->
-            <div class="lg:col-span-8 flex flex-wrap xl:flex-nowrap items-center gap-2">
+    <section class="bg-white rounded-3xl border border-sage-100 p-4 sm:p-6 shadow-sm space-y-4">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-center">
+            <!-- Bên trái (2/3 = 8/12 cột): Danh mục Blog căn thẳng 1 hàng ngang (cuộn ngang mượt mà trên mobile) -->
+            <div class="lg:col-span-8 flex flex-nowrap sm:flex-wrap xl:flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
                 <span class="h-10 inline-flex items-center text-xs font-bold uppercase tracking-wider text-stone-500 mr-1 whitespace-nowrap leading-none flex-shrink-0">
                     Chuyên mục:
                 </span>
@@ -61,13 +61,13 @@
         </div>
 
         <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-sage-100 text-xs">
-            <div class="flex flex-wrap items-center gap-2">
-                <span class="h-9 inline-flex items-center font-bold text-stone-500 mr-1 whitespace-nowrap leading-none">
+            <div class="flex flex-nowrap sm:flex-wrap items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0 w-full sm:w-auto">
+                <span class="h-9 inline-flex items-center font-bold text-stone-500 mr-1 whitespace-nowrap leading-none flex-shrink-0">
                     Chăm sóc theo loại da:
                 </span>
                 @foreach(['' => 'Tất cả loại da', 'Da dầu' => '💧 Da dầu & Lỗ chân lông to', 'Da khô' => '🌿 Da khô & Thiếu ẩm', 'Da nhạy cảm' => '🌸 Da nhạy cảm & Phục hồi'] as $skinKey => $skinLabel)
                     <a href="{{ route('blog.index', array_filter(['topic' => $selectedTopic, 'skin_type' => $skinKey, 'search' => $search, 'sort' => $sort !== 'newest' ? $sort : null])) }}"
-                       class="h-9 px-3.5 inline-flex items-center justify-center rounded-full font-semibold border leading-none whitespace-nowrap transition {{ $selectedSkin === $skinKey ? 'bg-stone-900 text-white border-stone-900' : 'bg-sage-50/70 text-stone-600 border-sage-200/80 hover:bg-sage-100' }}">
+                       class="h-9 px-3.5 inline-flex items-center justify-center rounded-full font-semibold border leading-none whitespace-nowrap transition flex-shrink-0 {{ $selectedSkin === $skinKey ? 'bg-stone-900 text-white border-stone-900' : 'bg-sage-50/70 text-stone-600 border-sage-200/80 hover:bg-sage-100' }}">
                         {{ $skinLabel }}
                     </a>
                 @endforeach
@@ -83,16 +83,16 @@
 
     <!-- 2. TIÊU ĐỀ BLOG MỸ PHẨM & CHĂM SÓC DA (TRÁI) + BỘ LỌC SẮP XẾP SELECT-OPTION (PHẢI) -->
     <section class="space-y-6">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-sage-100">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-3 border-b border-sage-100">
             <div>
                 <span class="text-xs font-bold uppercase tracking-widest text-sage-500">Cẩm Nang Chăm Sóc Sắc Đẹp</span>
-                <h1 class="font-serif text-2xl sm:text-3xl font-bold text-stone-800 mt-0.5">
+                <h1 class="font-serif text-xl sm:text-3xl font-bold text-stone-800 mt-0.5">
                     Blog Mỹ Phẩm &amp; Chăm Sóc Da ({{ $posts->total() }} bài viết)
                 </h1>
             </div>
 
             <!-- Bộ lọc select - option nằm phía bên phải tiêu đề, căn thẳng hàng ngang -->
-            <form action="{{ route('blog.index') }}" method="GET" class="flex items-center gap-2.5 flex-shrink-0 m-0">
+            <form action="{{ route('blog.index') }}" method="GET" class="flex items-center gap-2.5 flex-shrink-0 m-0 w-full sm:w-auto">
                 @if($selectedTopic)
                     <input type="hidden" name="topic" value="{{ $selectedTopic }}">
                 @endif
@@ -106,11 +106,11 @@
                 <label for="blog-sort-select" class="h-10 inline-flex items-center text-xs font-bold text-stone-600 whitespace-nowrap leading-none">
                     Lọc theo:
                 </label>
-                <div class="relative h-10 flex items-center">
+                <div class="relative h-10 flex items-center flex-1 sm:flex-initial">
                     <select id="blog-sort-select"
                             name="sort"
                             onchange="this.form.submit()"
-                            class="h-10 appearance-none bg-white border border-sage-200 hover:border-sage-400 text-stone-700 text-xs font-bold leading-none rounded-xl pl-3.5 pr-9 py-0 shadow-sm focus:outline-none focus:ring-2 focus:ring-sage-400 focus:border-sage-500 cursor-pointer transition">
+                            class="h-10 w-full sm:w-auto appearance-none bg-white border border-sage-200 hover:border-sage-400 text-stone-700 text-xs font-bold leading-none rounded-xl pl-3.5 pr-9 py-0 shadow-sm focus:outline-none focus:ring-2 focus:ring-sage-400 focus:border-sage-500 cursor-pointer transition">
                         <option value="newest" @selected($sort === 'newest')>Ngày mới nhất</option>
                         <option value="most_viewed" @selected($sort === 'most_viewed')>Bài viết xem nhiều nhất</option>
                         <option value="most_commented" @selected($sort === 'most_commented')>Bài viết Hot (Bình luận nhiều nhất)</option>
@@ -125,7 +125,7 @@
         </div>
 
         @if($posts->isEmpty())
-            <div class="bg-white rounded-3xl border border-sage-100 p-12 text-center space-y-3">
+            <div class="bg-white rounded-3xl border border-sage-100 p-8 sm:p-12 text-center space-y-3">
                 <p class="font-serif text-xl font-bold text-stone-700">Không tìm thấy bài viết phù hợp</p>
                 <p class="text-xs text-stone-500">Hãy thử chọn chuyên mục khác hoặc xem toàn bộ {{ $allPostsCount }} bài viết cẩm nang chăm sóc da.</p>
                 <a href="{{ route('blog.index') }}" class="inline-block bg-sage-500 hover:bg-sage-600 text-white text-xs font-semibold px-6 py-2.5 rounded-full transition">
@@ -133,7 +133,7 @@
                 </a>
             </div>
         @else
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                 @foreach($posts as $post)
                     <article class="bg-white rounded-3xl border border-sage-100 overflow-hidden shadow-xs hover:shadow-lg transition flex flex-col justify-between group">
                         <div>

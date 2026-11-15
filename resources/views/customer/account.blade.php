@@ -16,15 +16,15 @@
 @section('meta_robots', 'noindex, nofollow')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-10">
     <!-- Customer Header Banner -->
-    <div class="bg-white rounded-3xl border border-sage-100 p-6 sm:p-8 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div class="flex items-center gap-4">
-            <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-sage-500 to-sage-300 text-white flex items-center justify-center font-serif text-2xl font-bold shadow-md shadow-sage-200">
+    <div class="bg-white rounded-3xl border border-sage-100 p-4 sm:p-8 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
+        <div class="flex items-start sm:items-center gap-3.5 sm:gap-4 min-w-0">
+            <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-sage-500 to-sage-300 text-white flex items-center justify-center font-serif text-xl sm:text-2xl font-bold shadow-md shadow-sage-200 flex-shrink-0">
                 {{ strtoupper(substr($user->name, 0, 1)) }}
             </div>
-            <div class="space-y-1">
-                <div class="flex flex-wrap items-center gap-2">
+            <div class="space-y-1 min-w-0">
+                <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
                     <span class="text-[11px] font-bold uppercase tracking-widest bg-sage-50 text-sage-600 border border-sage-200 px-2.5 py-0.5 rounded-full">
                         Khách Hàng Thân Thiết
                     </span>
@@ -39,23 +39,23 @@
                         </span>
                     @endif
                 </div>
-                <h1 class="font-serif text-2xl sm:text-3xl font-bold text-stone-800">{{ $user->name }}</h1>
-                <p class="text-xs text-stone-500">
+                <h1 class="font-serif text-xl sm:text-3xl font-bold text-stone-800 break-words">{{ $user->name }}</h1>
+                <p class="text-xs text-stone-500 break-words leading-relaxed">
                     📧 {{ $user->email }} • 📞 {{ $user->phone ?? 'Chưa cập nhật' }} • 📍 Mặc định: {{ $user->address ?? 'TP. Hồ Chí Minh' }}
                 </p>
             </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3">
-            <a href="{{ route('customer.wishlist') }}" class="text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-4 py-2.5 rounded-full transition">
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+            <a href="{{ route('customer.wishlist') }}" class="text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full transition">
                 ❤️ Danh Mục Yêu Thích (<span data-wishlist-count>{{ $wishlistProducts->count() }}</span>)
             </a>
-            <a href="{{ route('products.index') }}" class="text-xs font-semibold bg-sage-50 hover:bg-sage-100 text-sage-700 border border-sage-200 px-4 py-2.5 rounded-full transition">
+            <a href="{{ route('products.index') }}" class="text-xs font-semibold bg-sage-50 hover:bg-sage-100 text-sage-700 border border-sage-200 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full transition">
                 🛍️ Tiếp tục mua sắm
             </a>
             <form action="{{ route('customer.logout') }}" method="POST" class="inline">
                 @csrf
-                <button type="submit" class="text-xs font-semibold bg-stone-900 hover:bg-red-600 text-white px-4 py-2.5 rounded-full transition cursor-pointer">
+                <button type="submit" class="text-xs font-semibold bg-stone-900 hover:bg-red-600 text-white px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full transition cursor-pointer">
                     Đăng xuất tài khoản
                 </button>
             </form>
@@ -66,8 +66,8 @@
         $currentTab = $activeSection ?? 'overview';
     @endphp
 
-    <!-- Thanh Danh Mục Trong Phần Tài Khoản Khách Hàng (Mỗi danh mục là 1 trang riêng biệt) -->
-    <nav class="bg-white rounded-2xl border border-sage-100 p-2 shadow-2xs flex flex-wrap items-center gap-2 text-xs font-bold">
+    <!-- Thanh Danh Mục Trong Phần Tài Khoản Khách Hàng (Cuộn ngang mượt mà trên Mobile, xuống dòng tự nhiên trên Tablet/Desktop) -->
+    <nav class="bg-white rounded-2xl border border-sage-100 p-2 shadow-2xs flex flex-nowrap md:flex-wrap items-center gap-2 text-xs font-bold overflow-x-auto no-scrollbar whitespace-nowrap">
         <a href="{{ route('customer.account') }}"
             class="px-4 py-2.5 rounded-xl transition {{ $currentTab === 'overview' ? 'bg-sage-500 text-white shadow-xs' : 'text-stone-600 hover:bg-sage-50 hover:text-sage-700' }}">
             👤 Tổng Quan Tài Khoản
@@ -1121,14 +1121,68 @@
                                     </span>
                                 @endif
                             </div>
-                            <div class="text-base font-bold text-sage-600">
-                                Tổng thanh toán: {{ number_format($order->total_amount, 0, ',', '.') }}₫
+                            <div class="flex flex-wrap items-center gap-3">
+                                <div class="text-base font-bold text-sage-600">
+                                    Tổng thanh toán: {{ number_format($order->total_amount, 0, ',', '.') }}₫
+                                </div>
                             </div>
                         </div>
+
+                        @php
+                            $canCancelOrder = in_array($order->status, ['PENDING', 'CONFIRMED'], true) && !$order->isPaid();
+                            $normalizedUserPhone = \App\Services\SmsGatewayService::normalizeVietnamPhone((string) ($user->phone ?? ''));
+                            $normalizedOrderPhone = \App\Services\SmsGatewayService::normalizeVietnamPhone((string) ($order->phone ?? ''));
+                            $isOwnerPhoneMatched = $normalizedUserPhone !== '' && $normalizedUserPhone === $normalizedOrderPhone;
+                        @endphp
+                        @if($canCancelOrder)
+                            <div class="pt-3 border-t border-dashed border-red-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-red-50/50 px-4 py-3 rounded-2xl">
+                                <div class="flex items-start sm:items-center gap-2 text-xs text-red-700">
+                                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-100 text-red-600 font-bold flex-shrink-0">!</span>
+                                    <span>
+                                        <strong>Thông báo hủy đơn:</strong> Chỉ tài khoản đăng nhập đúng SĐT chính chủ đặt hàng (<strong>{{ $order->phone }}</strong>) mới có thể hủy đơn hàng này.
+                                    </span>
+                                </div>
+
+                                @if($isOwnerPhoneMatched)
+                                    <form action="{{ route('customer.orders.cancel', $order) }}" method="POST"
+                                          onsubmit="return handleCancelOrderSubmit(event, {{ $order->id }}, '{{ addslashes($order->phone) }}', true)"
+                                          class="flex-shrink-0">
+                                        @csrf
+                                        <input type="hidden" name="cancel_reason" value="Khách hàng chủ động hủy đơn hàng (đã xác thực đúng SĐT chính chủ)">
+                                        <button type="submit"
+                                                class="inline-flex items-center gap-1.5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full shadow-xs transition cursor-pointer">
+                                            ✕ Hủy Đơn Hàng
+                                        </button>
+                                    </form>
+                                @else
+                                    <button type="button"
+                                            onclick="handleCancelOrderSubmit(event, {{ $order->id }}, '{{ addslashes($order->phone) }}', false)"
+                                            class="inline-flex items-center gap-1.5 text-xs font-bold bg-stone-200 hover:bg-red-100 text-stone-700 hover:text-red-700 border border-stone-300 px-4 py-2 rounded-full transition cursor-pointer flex-shrink-0">
+                                        ✕ Hủy Đơn Hàng
+                                    </button>
+                                @endif
+                            </div>
+                        @endif
                     </div>
                 @endforeach
             </div>
         @endif
+
+        <script>
+            function handleCancelOrderSubmit(event, orderId, orderPhone, isOwnerPhoneMatched) {
+                if (!isOwnerPhoneMatched) {
+                    event.preventDefault();
+                    alert('⚠️ Thông báo bảo mật Hủy Đơn Hàng:\nBạn phải đăng nhập đúng tài khoản có số điện thoại chính chủ đặt hàng (' + orderPhone + ') mới có quyền hủy đơn hàng #ORDER-' + orderId + '!');
+                    return false;
+                }
+                const confirmed = confirm('⚠️ Xác nhận Hủy Đơn Hàng #ORDER-' + orderId + ':\n\n• Số điện thoại chính chủ: ' + orderPhone + '\n• Đơn hàng sau khi hủy sẽ không thể khôi phục.\n\nBạn có chắc chắn muốn hủy đơn hàng này không?');
+                if (!confirmed) {
+                    event.preventDefault();
+                    return false;
+                }
+                return true;
+            }
+        </script>
     </section>
     @endif
 

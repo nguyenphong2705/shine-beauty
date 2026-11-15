@@ -76,9 +76,9 @@
 
 @section('content')
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-16">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-10 sm:space-y-16">
     <!-- Breadcrumbs -->
-    <nav class="flex items-center gap-2 text-xs text-stone-500">
+    <nav class="flex flex-wrap items-center gap-2 text-xs text-stone-500">
         <a href="{{ route('home') }}" class="hover:text-sage-600">Trang chủ</a>
         <span>/</span>
         <a href="{{ route('products.index', ['category' => $product->category->slug]) }}" class="hover:text-sage-600">
@@ -89,10 +89,10 @@
     </nav>
 
     <!-- Product Main Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
         <!-- Gallery -->
         <div class="lg:col-span-6 space-y-4">
-            <div class="relative aspect-square rounded-3xl overflow-hidden bg-white border border-sage-100 shadow-sm">
+            <div class="relative aspect-square rounded-3xl overflow-hidden bg-white border border-sage-100 shadow-sm max-w-lg mx-auto lg:max-w-none">
                 <img id="main-product-image"
                      src="{{ $product->first_image }}"
                      onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?auto=format&fit=crop&w=900&q=80';"
@@ -106,9 +106,9 @@
             </div>
 
             @if(is_array($product->images) && count($product->images) > 1)
-                <div class="flex gap-3">
+                <div class="flex gap-3 overflow-x-auto no-scrollbar pb-1 justify-center lg:justify-start">
                     @foreach($product->images as $img)
-                        <button type="button" onclick="document.getElementById('main-product-image').src='{{ $img }}'" class="w-20 h-20 rounded-2xl overflow-hidden border-2 border-sage-200 hover:border-sage-500 transition">
+                        <button type="button" onclick="document.getElementById('main-product-image').src='{{ $img }}'" class="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 rounded-2xl overflow-hidden border-2 border-sage-200 hover:border-sage-500 transition">
                             <img src="{{ $img }}"
                                  onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?auto=format&fit=crop&w=900&q=80';"
                                  alt="Thumbnail"
@@ -120,7 +120,7 @@
         </div>
 
         <!-- Product Details -->
-        <div class="lg:col-span-6 space-y-6">
+        <div class="lg:col-span-6 space-y-5 sm:space-y-6">
             <div class="space-y-3">
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="text-xs font-mono font-bold bg-stone-900 text-white px-3 py-1 rounded-full">
@@ -142,11 +142,11 @@
                     </span>
                 </div>
 
-                <h1 class="font-serif text-2xl sm:text-3xl font-bold text-stone-900 leading-snug">
+                <h1 class="font-serif text-xl sm:text-3xl font-bold text-stone-900 leading-snug">
                     {{ $product->name }}
                 </h1>
 
-                <div class="flex items-center gap-3 text-sm">
+                <div class="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm">
                     <span class="text-amber-400">★★★★★</span>
                     <span class="font-semibold text-stone-700">4.9/5</span>
                     <span class="text-stone-400">|</span>
@@ -155,12 +155,12 @@
             </div>
 
             <!-- Price Box -->
-            <div class="bg-sage-50/70 p-5 rounded-2xl border border-sage-100 flex items-baseline gap-4">
-                <span class="text-3xl font-bold text-sage-600">
+            <div class="bg-sage-50/70 p-4 sm:p-5 rounded-2xl border border-sage-100 flex flex-wrap items-baseline gap-3 sm:gap-4">
+                <span class="text-2xl sm:text-3xl font-bold text-sage-600">
                     {{ number_format($finalPrice, 0, ',', '.') }}₫
                 </span>
                 @if($product->sale_price && $product->sale_price < $product->price)
-                    <span class="text-base text-stone-400 line-through">
+                    <span class="text-sm sm:text-base text-stone-400 line-through">
                         {{ number_format($product->price, 0, ',', '.') }}₫
                     </span>
                 @endif
@@ -175,7 +175,7 @@
             </div>
 
             <!-- Active Ingredients Highlight -->
-            <div class="bg-white p-5 rounded-2xl border border-sage-100 space-y-3">
+            <div class="bg-white p-4 sm:p-5 rounded-2xl border border-sage-100 space-y-3">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-sage-600">
                     🧪 Bảng Thành Phần Chi Tiết (INCI Ingredients)
                 </h3>
@@ -195,32 +195,32 @@
             @php
                 $isProductFavorited = auth()->check() && in_array((int) $product->id, $wishlistProductIds ?? [], true);
             @endphp
-            <form action="{{ route('cart.add') }}" method="POST" class="flex flex-wrap items-center gap-3.5 pt-2">
+            <form action="{{ route('cart.add') }}" method="POST" class="flex flex-wrap items-center gap-2.5 sm:gap-3.5 pt-2">
                 @csrf
                 <input type="hidden" name="product_id" value="{{ $product->id }}">
 
                 <div class="flex items-center border border-sage-200 rounded-full bg-white px-3 py-2">
                     <label for="quantity" class="text-xs text-stone-500 mr-2 pl-2">Số lượng:</label>
-                    <input type="number" id="quantity" name="quantity" value="1" min="1" max="20" class="w-14 text-center font-bold text-sm text-stone-800 focus:outline-none">
+                    <input type="number" id="quantity" name="quantity" value="1" min="1" max="20" class="w-12 sm:w-14 text-center font-bold text-sm text-stone-800 focus:outline-none">
                 </div>
-
-                <button type="submit" class="flex-1 min-w-[150px] inline-flex items-center justify-center whitespace-nowrap bg-white hover:bg-sage-50 text-sage-600 border-2 border-sage-500 font-semibold py-3.5 px-5 rounded-full transition text-sm cursor-pointer">
-                    + Thêm Vào Giỏ
-                </button>
-
-                <button type="submit" name="buy_now" value="1" class="flex-1 min-w-[150px] inline-flex items-center justify-center whitespace-nowrap bg-sage-500 hover:bg-sage-600 text-white border-2 border-sage-500 hover:border-sage-600 font-semibold py-3.5 px-5 rounded-full shadow-lg shadow-sage-200 transition text-sm cursor-pointer">
-                    Mua Ngay →
-                </button>
 
                 <button type="button"
                     data-wishlist-btn="{{ $product->id }}"
                     data-favorited="{{ $isProductFavorited ? '1' : '0' }}"
                     onclick="toggleWishlistProduct({{ $product->id }}, this)"
                     title="{{ $isProductFavorited ? 'Bỏ yêu thích sản phẩm này' : 'Thêm vào danh mục Yêu Thích' }}"
-                    class="w-12 h-12 rounded-full flex items-center justify-center border transition-all duration-200 cursor-pointer flex-shrink-0 {{ $isProductFavorited ? 'opacity-100 bg-red-50 text-red-500 border-red-300 shadow-md shadow-red-200/80 ring-2 ring-red-400/50 scale-105' : 'opacity-40 hover:opacity-95 bg-white text-stone-400 hover:text-red-500 border-stone-200' }}">
-                    <svg class="w-6 h-6 transition-transform duration-200" viewBox="0 0 24 24" fill="{{ $isProductFavorited ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2">
+                    class="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center border transition-all duration-200 cursor-pointer flex-shrink-0 sm:order-last {{ $isProductFavorited ? 'opacity-100 bg-red-50 text-red-500 border-red-300 shadow-md shadow-red-200/80 ring-2 ring-red-400/50 scale-105' : 'opacity-40 hover:opacity-95 bg-white text-stone-400 hover:text-red-500 border-stone-200' }}">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-200" viewBox="0 0 24 24" fill="{{ $isProductFavorited ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
+                </button>
+
+                <button type="submit" class="w-full sm:w-auto sm:flex-1 sm:min-w-[145px] inline-flex items-center justify-center whitespace-nowrap bg-white hover:bg-sage-50 text-sage-600 border-2 border-sage-500 font-semibold py-3 sm:py-3.5 px-5 rounded-full transition text-sm cursor-pointer">
+                    + Thêm Vào Giỏ
+                </button>
+
+                <button type="submit" name="buy_now" value="1" class="w-full sm:w-auto sm:flex-1 sm:min-w-[145px] inline-flex items-center justify-center whitespace-nowrap bg-sage-500 hover:bg-sage-600 text-white border-2 border-sage-500 hover:border-sage-600 font-semibold py-3 sm:py-3.5 px-5 rounded-full shadow-lg shadow-sage-200 transition text-sm cursor-pointer">
+                    Mua Ngay →
                 </button>
             </form>
         </div>
@@ -228,9 +228,9 @@
 
     <!-- Related Products -->
     @if($relatedProducts->isNotEmpty())
-        <section class="pt-10 border-t border-sage-100 space-y-6">
-            <h2 class="font-serif text-2xl font-bold text-stone-800">Sản Phẩm Cùng Danh Mục</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <section class="pt-8 sm:pt-10 border-t border-sage-100 space-y-6">
+            <h2 class="font-serif text-xl sm:text-2xl font-bold text-stone-800">Sản Phẩm Cùng Danh Mục</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                 @foreach($relatedProducts as $rel)
                     @include('partials.product-card', ['product' => $rel])
                 @endforeach

@@ -17,7 +17,7 @@
 </div>
 
 @if($categoryNotFound)
-    <div class="bg-white rounded-3xl border border-amber-200 p-16 text-center space-y-4">
+    <div class="bg-white rounded-3xl border border-amber-200 p-8 sm:p-16 text-center space-y-4">
         <p class="font-serif text-xl font-bold text-stone-700">Danh mục không tồn tại</p>
         <p class="text-sm text-stone-500">Danh mục bạn tìm không có trong hệ thống. Hãy chọn danh mục khác hoặc xem toàn bộ mỹ phẩm.</p>
         <a href="{{ route('products.index') }}" data-filter-link class="inline-block bg-sage-500 hover:bg-sage-600 text-white text-sm font-semibold px-6 py-2.5 rounded-full transition">
@@ -25,7 +25,7 @@
         </a>
     </div>
 @elseif($products->isEmpty())
-    <div class="bg-white rounded-3xl border border-sage-100 p-16 text-center space-y-4">
+    <div class="bg-white rounded-3xl border border-sage-100 p-8 sm:p-16 text-center space-y-4">
         <p class="font-serif text-xl font-bold text-stone-700">Không tìm thấy sản phẩm phù hợp với bộ lọc</p>
         <p class="text-sm text-stone-500">Hãy thử thay đổi từ khóa tìm kiếm hoặc đặt lại bộ lọc để xem toàn bộ mỹ phẩm.</p>
         <a href="{{ route('products.index') }}" data-filter-link class="inline-block bg-sage-500 hover:bg-sage-600 text-white text-sm font-semibold px-6 py-2.5 rounded-full transition">
@@ -33,7 +33,7 @@
         </a>
     </div>
 @else
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
         @foreach($products as $product)
             @include('partials.product-card', ['product' => $product])
         @endforeach

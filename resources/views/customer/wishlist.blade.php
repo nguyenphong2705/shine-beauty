@@ -4,15 +4,15 @@
 @section('meta_robots', 'noindex, nofollow')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8">
     <!-- Customer Header Banner -->
-    <div class="bg-white rounded-3xl border border-sage-100 p-6 sm:p-8 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div class="flex items-center gap-4">
-            <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-sage-500 to-sage-300 text-white flex items-center justify-center font-serif text-2xl font-bold shadow-md shadow-sage-200">
+    <div class="bg-white rounded-3xl border border-sage-100 p-4 sm:p-8 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
+        <div class="flex items-start sm:items-center gap-3.5 sm:gap-4 min-w-0">
+            <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-sage-500 to-sage-300 text-white flex items-center justify-center font-serif text-xl sm:text-2xl font-bold shadow-md shadow-sage-200 flex-shrink-0">
                 {{ strtoupper(substr($user->name, 0, 1)) }}
             </div>
-            <div class="space-y-1">
-                <div class="flex flex-wrap items-center gap-2">
+            <div class="space-y-1 min-w-0">
+                <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
                     <span class="text-[11px] font-bold uppercase tracking-widest bg-sage-50 text-sage-600 border border-sage-200 px-2.5 py-0.5 rounded-full">
                         Khách Hàng Thân Thiết
                     </span>
@@ -23,25 +23,25 @@
                         </span>
                     @endif
                 </div>
-                <h1 class="font-serif text-2xl sm:text-3xl font-bold text-stone-800">{{ $user->name }}</h1>
-                <p class="text-xs text-stone-500">
+                <h1 class="font-serif text-xl sm:text-3xl font-bold text-stone-800 break-words">{{ $user->name }}</h1>
+                <p class="text-xs text-stone-500 break-words leading-relaxed">
                     📧 {{ $user->email }} • 📞 {{ $user->phone ?? 'Chưa cập nhật' }} • 📍 {{ $user->address ?? 'TP. Hồ Chí Minh' }}
                 </p>
             </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3">
-            <a href="{{ route('customer.account') }}" class="text-xs font-semibold bg-sage-50 hover:bg-sage-100 text-sage-700 border border-sage-200 px-4 py-2.5 rounded-full transition">
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+            <a href="{{ route('customer.account') }}" class="text-xs font-semibold bg-sage-50 hover:bg-sage-100 text-sage-700 border border-sage-200 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full transition">
                 ← Quay lại Tổng quan Tài khoản
             </a>
-            <a href="{{ route('products.index') }}" class="text-xs font-semibold bg-sage-500 hover:bg-sage-600 text-white px-4 py-2.5 rounded-full transition shadow-xs">
+            <a href="{{ route('products.index') }}" class="text-xs font-semibold bg-sage-500 hover:bg-sage-600 text-white px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full transition shadow-xs">
                 🛍️ Tiếp tục mua sắm
             </a>
         </div>
     </div>
 
-    <!-- Thanh Danh Mục Trong Phần Tài Khoản Khách Hàng (Mỗi danh mục là 1 trang riêng biệt) -->
-    <nav class="bg-white rounded-2xl border border-sage-100 p-2 shadow-2xs flex flex-wrap items-center gap-2 text-xs font-bold">
+    <!-- Thanh Danh Mục Trong Phần Tài Khoản Khách Hàng (Cuộn ngang mượt mà trên Mobile, xuống dòng tự nhiên trên Tablet/Desktop) -->
+    <nav class="bg-white rounded-2xl border border-sage-100 p-2 shadow-2xs flex flex-nowrap md:flex-wrap items-center gap-2 text-xs font-bold overflow-x-auto no-scrollbar whitespace-nowrap">
         <a href="{{ route('customer.account') }}" class="px-4 py-2.5 rounded-xl text-stone-600 hover:bg-sage-50 hover:text-sage-700 transition">
             👤 Tổng Quan Tài Khoản
         </a>
@@ -67,13 +67,13 @@
     </nav>
 
     <!-- Danh Mục Mới: Sản Phẩm Yêu Thích Của Khách Hàng -->
-    <section class="bg-white rounded-3xl border border-sage-100 p-6 sm:p-8 shadow-xs space-y-6">
+    <section class="bg-white rounded-3xl border border-sage-100 p-4 sm:p-8 shadow-xs space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-4 border-b border-sage-100 pb-4">
             <div>
                 <span class="text-xs font-bold uppercase tracking-widest text-red-500">Danh Mục Cá Nhân Hóa</span>
-                <h2 class="font-serif text-2xl sm:text-3xl font-bold text-stone-800 flex items-center gap-2 mt-0.5">
+                <h2 class="font-serif text-xl sm:text-3xl font-bold text-stone-800 flex flex-wrap items-center gap-2 mt-0.5">
                     <span>❤️ Danh Mục Yêu Thích Của Bạn</span>
-                    <span class="text-sm font-sans font-bold bg-red-50 text-red-600 border border-red-200 px-3 py-1 rounded-full">
+                    <span class="text-xs sm:text-sm font-sans font-bold bg-red-50 text-red-600 border border-red-200 px-3 py-1 rounded-full">
                         <span data-wishlist-count>{{ $wishlistProducts->count() }}</span> sản phẩm
                     </span>
                 </h2>
@@ -88,7 +88,7 @@
         </div>
 
         @if($wishlistProducts->isEmpty())
-            <div class="text-center py-16 space-y-4">
+            <div class="text-center py-12 sm:py-16 space-y-4">
                 <div class="w-16 h-16 mx-auto rounded-full bg-red-50 text-red-400 flex items-center justify-center text-3xl">
                     ♡
                 </div>
@@ -103,7 +103,7 @@
                 </a>
             </div>
         @else
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                 @foreach($wishlistProducts as $product)
                     <div id="wishlist-item-card-{{ $product->id }}">
                         @include('partials.product-card', ['product' => $product])

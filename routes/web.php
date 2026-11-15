@@ -341,6 +341,7 @@ Route::get('/tai-khoan/so-dia-chi', [CustomerAuthController::class, 'addresses']
 Route::get('/tai-khoan/yeu-thich', [CustomerAuthController::class, 'wishlist'])->name('customer.wishlist');
 Route::get('/tai-khoan/gio-hang-da-luu', [CustomerAuthController::class, 'savedCartPage'])->name('customer.cart');
 Route::get('/tai-khoan/lich-su-don-hang', [CustomerAuthController::class, 'orders'])->name('customer.orders');
+Route::post('/tai-khoan/don-hang/{order}/huy-don', [CustomerAuthController::class, 'cancelOrder'])->name('customer.orders.cancel');
 Route::get('/tai-khoan/kho-ma-giam-gia', [CustomerAuthController::class, 'vouchers'])->name('customer.vouchers');
 
 /**

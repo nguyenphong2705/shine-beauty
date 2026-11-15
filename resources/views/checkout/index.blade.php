@@ -59,11 +59,11 @@
                         </p>
 
                         <!-- Giao diện Bank Transfer Payment chuyên nghiệp -->
-                        <div class="bg-blue-50/70 border-2 border-blue-200 rounded-3xl p-5 sm:p-6 text-left space-y-4">
+                        <div class="bg-blue-50/70 border-2 border-blue-200 rounded-3xl p-4 sm:p-6 text-left space-y-4">
                             <div class="flex flex-wrap items-center justify-between gap-3 border-b border-blue-100 pb-3.5">
                                 <div>
                                     <span class="text-[11px] font-bold uppercase tracking-wider text-blue-600 block">Cổng Thanh Toán Tự Động VietQR × SePay</span>
-                                    <h3 class="font-serif text-lg font-bold text-stone-800">Quét Mã QR Ngân Hàng Để Thanh Toán</h3>
+                                    <h3 class="font-serif text-base sm:text-lg font-bold text-stone-800">Quét Mã QR Ngân Hàng Để Thanh Toán</h3>
                                 </div>
                                 <div class="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-2xl border border-amber-200 shadow-sm">
                                     <span class="text-[11px] font-semibold text-stone-500">Thời gian còn lại:</span>
@@ -73,23 +73,23 @@
                                 </div>
                             </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
-                                <div class="sm:col-span-5 flex flex-col items-center bg-white p-4 rounded-2xl border border-blue-100 shadow-sm">
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5 items-center">
+                                <div class="md:col-span-5 flex flex-col items-center bg-white p-4 rounded-2xl border border-blue-100 shadow-sm">
                                     <img id="vietqr-dynamic-image"
                                          src="{{ $vietQrInfo['qr_image_url'] }}"
                                          onerror="this.onerror=null;this.src='{{ $vietQrInfo['fallback_qr_url'] }}';"
                                          alt="Mã QR Ngân hàng VietQR"
-                                         class="w-52 h-52 object-contain rounded-xl">
+                                         class="w-44 h-44 sm:w-52 sm:h-52 object-contain rounded-xl">
                                     <span class="text-[11px] text-blue-700 font-semibold mt-2 text-center">
                                         📷 Mở App Ngân hàng bất kỳ để quét mã QR
                                     </span>
                                 </div>
 
-                                <div class="sm:col-span-7 space-y-2.5 text-xs">
-                                    <div class="bg-white p-3 rounded-xl border border-blue-100 flex items-center justify-between">
+                                <div class="md:col-span-7 space-y-2.5 text-xs">
+                                    <div class="bg-white p-3 rounded-xl border border-blue-100 flex flex-wrap items-center justify-between gap-2">
                                         <div>
                                             <span class="text-stone-400 block">Mã đơn hàng:</span>
-                                            <strong data-bind-order-code class="font-mono text-sm text-stone-900">{{ $orderCodeDisplay }}</strong>
+                                            <strong data-bind-order-code class="font-mono text-sm text-stone-900 break-all">{{ $orderCodeDisplay }}</strong>
                                         </div>
                                         <span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-bold text-[11px]">PENDING_PAYMENT</span>
                                     </div>
@@ -99,10 +99,10 @@
                                         <strong id="vietqr-bank-name" class="text-stone-800 text-sm">{{ $vietQrInfo['bank_name'] }}</strong>
                                     </div>
 
-                                    <div class="bg-white p-3 rounded-xl border border-blue-100 flex items-center justify-between gap-2">
-                                        <div>
+                                    <div class="bg-white p-3 rounded-xl border border-blue-100 flex flex-wrap items-center justify-between gap-2">
+                                        <div class="min-w-0">
                                             <span class="text-stone-400 block">Số tài khoản nhận tiền:</span>
-                                            <strong id="vietqr-account-number" class="font-mono text-base text-blue-700">{{ $vietQrInfo['account_number'] }}</strong>
+                                            <strong id="vietqr-account-number" class="font-mono text-base text-blue-700 break-all">{{ $vietQrInfo['account_number'] }}</strong>
                                             <span class="block text-[11px] text-stone-500">Chủ TK: <strong id="vietqr-account-name">{{ $vietQrInfo['account_name'] }}</strong></span>
                                         </div>
                                         <button type="button"
@@ -112,7 +112,7 @@
                                         </button>
                                     </div>
 
-                                    <div class="bg-white p-3 rounded-xl border border-blue-100 flex items-center justify-between gap-2">
+                                    <div class="bg-white p-3 rounded-xl border border-blue-100 flex flex-wrap items-center justify-between gap-2">
                                         <div>
                                             <span class="text-stone-400 block">Số tiền cần thanh toán:</span>
                                             <strong id="vietqr-amount" class="text-base text-emerald-700">{{ number_format($successOrder->total_amount, 0, ',', '.') }}₫</strong>
@@ -124,10 +124,10 @@
                                         </button>
                                     </div>
 
-                                    <div class="bg-white p-3 rounded-xl border-2 border-blue-300 flex items-center justify-between gap-2">
-                                        <div>
+                                    <div class="bg-white p-3 rounded-xl border-2 border-blue-300 flex flex-wrap items-center justify-between gap-2">
+                                        <div class="min-w-0">
                                             <span class="text-stone-400 block">Nội dung chuyển khoản (Bắt buộc giữ nguyên):</span>
-                                            <strong id="vietqr-transfer-content" class="font-mono text-base font-bold text-blue-800">{{ $orderTransferCode }}</strong>
+                                            <strong id="vietqr-transfer-content" class="font-mono text-sm sm:text-base font-bold text-blue-800 break-all">{{ $orderTransferCode }}</strong>
                                         </div>
                                         <button type="button"
                                                 onclick="copyText(document.getElementById('vietqr-transfer-content').textContent, this)"
@@ -278,6 +278,42 @@
                         <span class="font-bold text-sage-600 text-lg">{{ number_format($successOrder->total_amount, 0, ',', '.') }}₫</span>
                     </div>
                 </div>
+
+                @php
+                    $canCancelSuccessOrder = in_array($successOrder->status, ['PENDING', 'CONFIRMED'], true) && !$successOrder->isPaid();
+                    $currentUserPhone = auth()->check()
+                        ? \App\Services\SmsGatewayService::normalizeVietnamPhone((string) (auth()->user()->phone ?? ''))
+                        : '';
+                    $successOrderPhone = \App\Services\SmsGatewayService::normalizeVietnamPhone((string) ($successOrder->phone ?? ''));
+                    $isSuccessOrderPhoneMatched = auth()->check() && $currentUserPhone !== '' && $currentUserPhone === $successOrderPhone;
+                @endphp
+                @if($canCancelSuccessOrder)
+                    <div class="text-left bg-red-50/70 border border-red-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="flex items-start sm:items-center gap-2 text-xs text-red-700">
+                            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-100 text-red-600 font-bold flex-shrink-0">!</span>
+                            <span>
+                                <strong>Lưu ý Hủy Đơn Hàng:</strong> Phải đăng nhập đúng tài khoản có SĐT chính chủ (<strong>{{ $successOrder->phone }}</strong>) mới hủy được đơn hàng vừa đặt.
+                            </span>
+                        </div>
+                        @if($isSuccessOrderPhoneMatched)
+                            <form action="{{ route('customer.orders.cancel', $successOrder) }}" method="POST"
+                                  onsubmit="return confirm('⚠️ Xác nhận Hủy Đơn Hàng #ORDER-{{ $successOrder->id }} (SĐT chính chủ: {{ addslashes($successOrder->phone) }}):\n\nBạn có chắc chắn muốn hủy đơn hàng này không?');"
+                                  class="flex-shrink-0">
+                                @csrf
+                                <input type="hidden" name="cancel_reason" value="Khách hàng hủy đơn ngay tại màn hình đặt hàng (đã xác thực đúng SĐT chính chủ)">
+                                <button type="submit" class="inline-flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-full shadow-xs transition cursor-pointer">
+                                    ✕ Hủy Đơn Hàng
+                                </button>
+                            </form>
+                        @else
+                            <button type="button"
+                                    onclick="alert('⚠️ Thông báo Hủy Đơn Hàng:\nBạn phải đăng nhập đúng tài khoản có số điện thoại chính chủ đặt hàng ({{ addslashes($successOrder->phone) }}) mới được phép hủy đơn hàng #ORDER-{{ $successOrder->id }}!');"
+                                    class="inline-flex items-center gap-1.5 bg-white hover:bg-red-100 text-red-600 border border-red-300 font-bold text-xs px-4 py-2.5 rounded-full transition cursor-pointer flex-shrink-0">
+                                ✕ Hủy Đơn Hàng
+                            </button>
+                        @endif
+                    </div>
+                @endif
 
                 <div class="flex flex-wrap justify-center gap-4 pt-2">
                     <a href="{{ route('orders.track', ['phone' => $successOrder->phone]) }}" class="bg-stone-900 hover:bg-stone-800 text-white font-semibold px-7 py-3 rounded-full text-sm transition">

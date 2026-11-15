@@ -7,7 +7,7 @@
 @section('og_image', $post['image'])
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-8 sm:space-y-12">
     <!-- Breadcrumb -->
     <nav aria-label="Breadcrumb" class="flex flex-wrap items-center gap-2 text-xs text-stone-500">
         <a href="{{ route('home') }}" class="hover:text-sage-600">Trang chủ</a>
@@ -19,9 +19,9 @@
         <span class="text-stone-800 font-semibold line-clamp-1">{{ $post['title'] }}</span>
     </nav>
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
         <!-- Bài viết chính -->
-        <article class="lg:col-span-8 bg-white rounded-3xl border border-sage-100 p-6 sm:p-10 shadow-xs space-y-8">
+        <article class="lg:col-span-8 bg-white rounded-3xl border border-sage-100 p-4 sm:p-10 shadow-xs space-y-6 sm:space-y-8">
             <div class="space-y-4">
                 <div class="flex flex-wrap items-center gap-2">
                     <a href="{{ route('blog.index', ['topic' => $post['category_slug']]) }}"
@@ -33,13 +33,13 @@
                     </span>
                 </div>
 
-                <h1 class="font-serif text-2xl sm:text-4xl font-bold text-stone-900 leading-tight">
+                <h1 class="font-serif text-xl sm:text-4xl font-bold text-stone-900 leading-tight">
                     {{ $post['title'] }}
                 </h1>
 
-                <div class="flex flex-wrap items-center justify-between gap-4 pt-2 pb-4 border-b border-sage-100 text-xs text-stone-500">
+                <div class="flex flex-wrap items-center justify-between gap-3 sm:gap-4 pt-2 pb-4 border-b border-sage-100 text-xs text-stone-500">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-sage-500 text-white font-serif font-bold flex items-center justify-center text-sm">
+                        <div class="w-10 h-10 rounded-full bg-sage-500 text-white font-serif font-bold flex items-center justify-center text-sm flex-shrink-0">
                             {{ mb_substr($post['author'], 0, 1) }}
                         </div>
                         <div>
@@ -47,7 +47,7 @@
                             <p class="text-[11px] text-stone-400">{{ $post['author_role'] }}</p>
                         </div>
                     </div>
-                    <div class="flex flex-wrap items-center gap-3 font-medium">
+                    <div class="flex flex-wrap items-center gap-2 sm:gap-3 font-medium">
                         <span>📅 Ngày đăng: {{ $post['published_at'] }}</span>
                         <span>•</span>
                         <span>⏱ {{ $post['read_time'] }}</span>
@@ -60,8 +60,8 @@
             </div>
 
             <!-- Ảnh bìa bài viết -->
-            <div class="rounded-3xl overflow-hidden border border-sage-100 bg-sage-50">
-                <img src="{{ $post['image'] }}" alt="{{ $post['title'] }}" class="w-full h-72 sm:h-96 object-cover" onerror="this.onerror=null;this.src='{{ \App\Http\Controllers\BlogController::FALLBACK_BLOG_IMAGE }}';">
+            <div class="rounded-2xl sm:rounded-3xl overflow-hidden border border-sage-100 bg-sage-50">
+                <img src="{{ $post['image'] }}" alt="{{ $post['title'] }}" class="w-full h-56 sm:h-96 object-cover" onerror="this.onerror=null;this.src='{{ \App\Http\Controllers\BlogController::FALLBACK_BLOG_IMAGE }}';">
             </div>
 
             <!-- Tóm tắt cốt lõi (Key Takeaways) -->
