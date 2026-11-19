@@ -35,9 +35,9 @@
     <meta name="twitter:image" content="@yield('og_image', asset('logo.png'))">
 
     <!-- Favicon & Fonts -->
-    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}?v=4">
-    <link rel="shortcut icon" type="image/png" href="{{ asset('favicon.png') }}?v=4">
-    <link rel="apple-touch-icon" href="{{ asset('favicon.png') }}?v=4">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}?v=5">
+    <link rel="shortcut icon" type="image/png" href="{{ asset('favicon.png') }}?v=5">
+    <link rel="apple-touch-icon" href="{{ asset('favicon.png') }}?v=5">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
