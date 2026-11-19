@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'SHINE Beauty | Mỹ Phẩm & Chăm Sóc Da Cao Cấp Chính Hãng')
-@section('meta_description', 'SHINE Beauty — Hệ thống phân phối mỹ phẩm cao cấp & chăm sóc da chuẩn khoa học chính hãng từ Pháp, Hàn Quốc và Nhật Bản. Miễn phí vận chuyển toàn quốc cho đơn từ 500.000₫.')
+@section('meta_description', 'SHINE Beauty — Hệ thống phân phối mỹ phẩm cao cấp & chăm sóc da chuẩn khoa học chính hãng từ Pháp, Hàn Quốc và Nhật Bản. Miễn phí vận chuyển toàn quốc cho đơn từ 900.000₫.')
 @section('canonical', route('home'))
 
 @section('content')

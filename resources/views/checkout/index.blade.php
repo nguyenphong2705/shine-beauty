@@ -4,8 +4,8 @@
 
 @section('content')
 @php
-    $freeShippingThreshold = $freeShippingThreshold ?? 500000;
-    $standardShippingFee = $standardShippingFee ?? 30000;
+    $freeShippingThreshold = $freeShippingThreshold ?? \App\Services\CheckoutService::FREE_SHIPPING_THRESHOLD;
+    $standardShippingFee = $standardShippingFee ?? \App\Services\CheckoutService::STANDARD_SHIPPING_FEE;
     $subtotal = $subtotal ?? 0;
     $discountAmount = $discountAmount ?? 0;
     $afterDiscount = $afterDiscount ?? max(0, $subtotal - $discountAmount);
@@ -267,7 +267,7 @@
                         <div class="flex justify-between text-xs text-stone-500">
                             <span>Phí vận chuyển toàn quốc:</span>
                             @if($successShippingFee > 0)
-                                <span class="font-semibold text-amber-600">+{{ number_format($successShippingFee, 0, ',', '.') }}₫ (Đơn dưới 500.000₫)</span>
+                                <span class="font-semibold text-amber-600">+{{ number_format($successShippingFee, 0, ',', '.') }}₫ (Đơn dưới 900.000₫)</span>
                             @else
                                 <span class="font-semibold text-emerald-600">Miễn phí (0₫)</span>
                             @endif
@@ -496,14 +496,14 @@
                             </span>
                         </div>
 
-                        <!-- CHỌN PHƯƠNG THỨC TÍNH PHÍ VẬN CHUYỂN (FLAT RATE vs ZONE-BASED CHO ĐƠN DƯỚI 500.000₫) -->
+                        <!-- CHỌN PHƯƠNG THỨC TÍNH PHÍ VẬN CHUYỂN (FLAT RATE vs ZONE-BASED CHO ĐƠN DƯỚI 900.000₫) -->
                         @php
                             $selectedShippingMode = old('shipping_mode', $shippingMode ?? 'ZONE_BASED');
                         @endphp
                         <div class="pt-3 border-t border-sage-200/80 space-y-3">
                             <div class="flex flex-wrap items-center justify-between gap-2">
                                 <label class="block text-xs font-bold uppercase tracking-wider text-sage-700">
-                                    🚚 Biểu Phí Vận Chuyển (Áp dụng khi đơn hàng &lt; 500.000₫)
+                                    🚚 Biểu Phí Vận Chuyển (Áp dụng khi đơn hàng &lt; 900.000₫)
                                 </label>
                                 <span id="active-shipping-zone-badge" class="text-[11px] font-bold px-3 py-1 rounded-full bg-sage-600 text-white shadow-2xs">
                                     {{ $shippingZoneLabel ?? 'Khu vực Nội thành: 15.000₫' }}
@@ -533,7 +533,7 @@
                                         <ul class="text-[11px] text-stone-600 space-y-0.5 leading-snug">
                                             <li>• Nội thành (TP.HCM / Hà Nội): <strong class="text-sage-700">15.000₫</strong></li>
                                             <li>• Ngoại tỉnh / Ngoại thành: <strong class="text-sage-700">35.000₫</strong></li>
-                                            <li class="text-stone-400 italic pt-1">• Đơn từ 500.000₫: Miễn phí toàn quốc (0₫)</li>
+                                            <li class="text-stone-400 italic pt-1">• Đơn từ 900.000₫: Miễn phí toàn quốc (0₫)</li>
                                         </ul>
                                     </div>
                                 </label>
@@ -662,23 +662,23 @@
                             @endif
                         </div>
 
-                        <!-- Thông báo & Thanh tiến trình Miễn phí vận chuyển toàn quốc (Đơn từ 500.000₫) -->
+                        <!-- Thông báo & Thanh tiến trình Miễn phí vận chuyển toàn quốc (Đơn từ 900.000₫) -->
                         <div id="shipping-notice-box" class="p-3.5 rounded-2xl border {{ $shippingFee === 0 ? 'bg-emerald-50/70 border-emerald-200' : 'bg-terracotta-50/80 border-terracotta-200' }} space-y-2 text-xs">
                             @if($shippingFee === 0)
                                 <div class="flex items-center justify-between text-emerald-800 font-semibold">
                                     <span>🚚 Miễn phí vận chuyển toàn quốc</span>
-                                    <span class="bg-emerald-600 text-white text-[10px] px-2 py-0.5 rounded-full">Đơn ≥ 500.000₫</span>
+                                    <span class="bg-emerald-600 text-white text-[10px] px-2 py-0.5 rounded-full">Đơn ≥ 900.000₫</span>
                                 </div>
                                 <p class="text-[11px] text-emerald-700">
-                                    Giá trị đơn hàng đạt <strong>{{ number_format($afterDiscount, 0, ',', '.') }}₫</strong> (từ 500.000₫ trở lên), bạn được miễn phí ship toàn quốc!
+                                    Giá trị đơn hàng đạt <strong>{{ number_format($afterDiscount, 0, ',', '.') }}₫</strong> (từ 900.000₫ trở lên), bạn được miễn phí ship toàn quốc!
                                 </p>
                             @else
                                 <div class="flex items-center justify-between text-terracotta-900 font-semibold">
                                     <span id="shipping-box-title">🚚 {{ $shippingZoneLabel ?? ('Phí ship: +' . number_format($shippingFee, 0, ',', '.') . '₫') }}</span>
-                                    <span class="bg-terracotta-200/80 text-terracotta-900 text-[10px] px-2 py-0.5 rounded-full flex-shrink-0">Đơn &lt; 500.000₫</span>
+                                    <span class="bg-terracotta-200/80 text-terracotta-900 text-[10px] px-2 py-0.5 rounded-full flex-shrink-0">Đơn &lt; 900.000₫</span>
                                 </div>
                                 <p class="text-[11px] text-terracotta-800">
-                                    Giá trị đơn hiện tại là <strong>{{ number_format($afterDiscount, 0, ',', '.') }}₫</strong> (nhỏ hơn 500.000₫). Mua thêm <strong class="text-terracotta-600">{{ number_format($amountNeededForFreeShip, 0, ',', '.') }}₫</strong> để được <strong>Miễn phí vận chuyển toàn quốc</strong>!
+                                    Giá trị đơn hiện tại là <strong>{{ number_format($afterDiscount, 0, ',', '.') }}₫</strong> (nhỏ hơn 900.000₫). Mua thêm <strong class="text-terracotta-600">{{ number_format($amountNeededForFreeShip, 0, ',', '.') }}₫</strong> để được <strong>Miễn phí vận chuyển toàn quốc</strong>!
                                 </p>
                                 <div class="w-full h-2 bg-terracotta-100 rounded-full overflow-hidden">
                                     <div class="h-full bg-terracotta-600 rounded-full transition-all duration-300" style="width: {{ min(100, (int) round(($afterDiscount / $freeShippingThreshold) * 100)) }}%"></div>
@@ -1369,11 +1369,11 @@
         }
 
         function computeShippingDetails(province, district, mode) {
-            // Đơn hàng từ 500.000đ trở lên được miễn phí ship toàn quốc
+            // Đơn hàng từ 900.000đ trở lên được miễn phí ship toàn quốc
             if (checkoutAfterDiscount >= freeShippingThreshold) {
                 return {
                     fee: 0,
-                    label: 'Miễn phí vận chuyển toàn quốc (Đơn từ 500.000₫)',
+                    label: 'Miễn phí vận chuyển toàn quốc (Đơn từ 900.000₫)',
                     shortZone: 'Freeship toàn quốc (0₫)'
                 };
             }
@@ -1476,7 +1476,7 @@
 
             const boxTitle = document.getElementById('shipping-box-title');
             if (boxTitle && checkoutAfterDiscount < freeShippingThreshold) {
-                boxTitle.textContent = `Đơn hàng dưới 500.000₫ — Phí vận chuyển: ${formatVnd(details.fee)}`;
+                boxTitle.textContent = `Đơn hàng dưới 900.000₫ — Phí vận chuyển: ${formatVnd(details.fee)}`;
             }
 
             const summaryZoneSub = document.getElementById('summary-shipping-zone-sub');

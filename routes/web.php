@@ -57,6 +57,14 @@ Route::get('/ngon-ngu/{locale}', function (string $locale) {
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 /**
+ * Trang Giới thiệu thương hiệu SHINE Beauty (Về Chúng Tôi).
+ * - Phương thức: GET
+ * - Đường dẫn chuẩn SEO: /gioi-thieu
+ * - Controller: HomeController@about
+ */
+Route::get('/gioi-thieu', [HomeController::class, 'about'])->name('about');
+
+/**
  * Sitemap XML động chuẩn SEO dành cho công cụ tìm kiếm (Googlebot, Bingbot).
  * - Phương thức: GET
  * - Đường dẫn chuẩn SEO: /sitemap.xml
@@ -73,6 +81,7 @@ Route::get('/sitemap.xml', function () {
     $staticUrls = [
         ['loc' => route('home'), 'priority' => '1.0', 'changefreq' => 'daily'],
         ['loc' => route('products.index'), 'priority' => '0.9', 'changefreq' => 'daily'],
+        ['loc' => route('about'), 'priority' => '0.8', 'changefreq' => 'monthly'],
         ['loc' => route('orders.track'), 'priority' => '0.6', 'changefreq' => 'weekly'],
     ];
 
@@ -120,6 +129,7 @@ Route::get('/robots.txt', function () {
         'User-agent: *',
         'Allow: /',
         'Allow: /san-pham',
+        'Allow: /gioi-thieu',
         'Disallow: /quan-tri',
         'Disallow: /tai-khoan',
         'Disallow: /thanh-toan',
@@ -599,6 +609,7 @@ Route::post('/quan-tri/thuong-hieu', [AdminController::class, 'storeBrand'])->na
 // =========================================================================
 // Chuyển hướng các đường dẫn tiếng Anh hoặc đường dẫn rút gọn cũ sang đường dẫn chuẩn SEO:
 Route::redirect('/products', '/san-pham', 301);
+Route::redirect('/about', '/gioi-thieu', 301);
 Route::get('/products/{slug}', fn (string $slug) => redirect()->route('products.show', $slug, 301));
 Route::redirect('/checkout', '/thanh-toan', 301);
 Route::redirect('/my-orders', '/tra-cuu-don-hang', 301);

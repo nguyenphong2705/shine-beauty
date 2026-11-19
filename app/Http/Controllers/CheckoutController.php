@@ -28,10 +28,10 @@ use RuntimeException;
  */
 class CheckoutController extends Controller
 {
-    /** Ngưỡng miễn phí vận chuyển (mặc định: 499.000₫) */
+    /** Ngưỡng miễn phí vận chuyển (mặc định: 900.000₫) */
     public const FREE_SHIPPING_THRESHOLD = CheckoutService::FREE_SHIPPING_THRESHOLD;
 
-    /** Phí vận chuyển tiêu chuẩn toàn quốc (mặc định: 30.000₫) */
+    /** Phí vận chuyển tiêu chuẩn toàn quốc (mặc định: 15.000₫) */
     public const STANDARD_SHIPPING_FEE = CheckoutService::STANDARD_SHIPPING_FEE;
 
     /**

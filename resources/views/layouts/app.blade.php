@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', __('SHINE Beauty | Mỹ Phẩm & Chăm Sóc Da Cao Cấp Chính Hãng'))</title>
-    <meta name="description" content="@yield('meta_description', 'SHINE Beauty — Hệ thống phân phối mỹ phẩm cao cấp & chăm sóc da chuẩn khoa học chính hãng 100% từ Pháp, Hàn Quốc, Nhật Bản. Miễn phí vận chuyển toàn quốc cho đơn từ 500.000₫.')">
+    <meta name="description" content="@yield('meta_description', 'SHINE Beauty — Hệ thống phân phối mỹ phẩm cao cấp & chăm sóc da chuẩn khoa học chính hãng 100% từ Pháp, Hàn Quốc, Nhật Bản. Miễn phí vận chuyển toàn quốc cho đơn từ 900.000₫.')">
     <meta name="keywords" content="@yield('meta_keywords', 'mỹ phẩm chính hãng, chăm sóc da, serum, kem dưỡng ẩm, chống nắng, trang điểm, nước hoa, SHINE Beauty')">
     <meta name="author" content="SHINE Beauty Cosmetics">
     <meta name="robots" content="@yield('meta_robots', 'index, follow, max-image-preview:large, max-snippet:-1')">
@@ -24,7 +24,7 @@
     <meta property="og:locale" content="{{ app()->getLocale() === 'en' ? 'en_US' : 'vi_VN' }}">
     <meta property="og:type" content="@yield('og_type', 'website')">
     <meta property="og:title" content="@yield('title', __('SHINE Beauty | Mỹ Phẩm & Chăm Sóc Da Cao Cấp Chính Hãng'))">
-    <meta property="og:description" content="@yield('meta_description', 'SHINE Beauty — Hệ thống phân phối mỹ phẩm cao cấp & chăm sóc da chuẩn khoa học chính hãng 100%. Miễn phí vận chuyển toàn quốc cho đơn từ 500.000₫.')">
+    <meta property="og:description" content="@yield('meta_description', 'SHINE Beauty — Hệ thống phân phối mỹ phẩm cao cấp & chăm sóc da chuẩn khoa học chính hãng 100%. Miễn phí vận chuyển toàn quốc cho đơn từ 900.000₫.')">
     <meta property="og:url" content="@yield('canonical', url()->current())">
     <meta property="og:image" content="@yield('og_image', asset('logo.png'))">
 
@@ -35,7 +35,9 @@
     <meta name="twitter:image" content="@yield('og_image', asset('logo.png'))">
 
     <!-- Favicon & Fonts -->
-    <link rel="icon" type="image/png" href="{{ asset('logo.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}?v=4">
+    <link rel="shortcut icon" type="image/png" href="{{ asset('favicon.png') }}?v=4">
+    <link rel="apple-touch-icon" href="{{ asset('favicon.png') }}?v=4">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -60,8 +62,8 @@
                 "priceRange": "₫₫",
                 "address": {
                     "@@type": "PostalAddress",
-                    "streetAddress": "28 Phạm Văn Chiêu, Phường Thông Tây Hội",
-                    "addressLocality": "TP. Hồ Chí Minh",
+                    "streetAddress": "Đường Phạm Văn Chiêu, Phường Thông Tây Hội",
+                    "addressLocality": "TP Hồ Chí Minh",
                     "addressCountry": "VN"
                 }
             },
@@ -112,7 +114,7 @@
          3. THANH THÔNG BÁO ĐẦU TRANG (TOP ANNOUNCEMENT BAR)
          ===================================================================== -->
     <div class="bg-gradient-to-r from-sage-200/80 via-sage-100 to-sage-200/80 text-sage-900 text-xs py-2 px-4 text-center font-medium tracking-wide">
-        {{ __('✨ SHINE Beauty — Miễn phí vận chuyển toàn quốc cho đơn từ 500.000₫ — Cam kết 100% Mỹ phẩm Chính hãng ✨') }}
+        {{ __('✨ SHINE Beauty — Miễn phí vận chuyển toàn quốc cho đơn từ 900.000₫ — Cam kết 100% Mỹ phẩm Chính hãng ✨') }}
     </div>
 
     <!-- =====================================================================
@@ -125,7 +127,7 @@
             <div class="flex items-center justify-between h-16 sm:h-20 gap-2">
                 <!-- Logo Thương Hiệu -->
                 <a href="{{ route('home') }}" class="flex items-center gap-2 sm:gap-3 group min-w-0 flex-shrink-0" aria-label="SHINE Beauty - Trang chủ">
-                    <img src="{{ asset('logo-menu.svg') }}?v=1" alt="SHINE Beauty Logo" width="64" height="64" class="w-10 h-10 sm:w-14 sm:h-14 lg:w-16 lg:h-16 object-contain drop-shadow-xs group-hover:scale-105 transition flex-shrink-0">
+                    <img src="{{ asset('logo.png') }}?v=4" alt="SHINE Beauty Logo" width="64" height="64" class="w-10 h-10 sm:w-14 sm:h-14 lg:w-16 lg:h-16 object-contain drop-shadow-xs group-hover:scale-105 transition flex-shrink-0">
                     <div class="min-w-0">
                         <span class="font-serif text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight text-stone-800 block leading-tight truncate">
                             SHINE <span class="text-sage-500 font-normal italic">Beauty</span>
@@ -138,11 +140,12 @@
 
                 <!-- Menu Điều Hướng Chính (Desktop Navigation: >= 1024px) -->
                 <nav aria-label="Điều hướng chính" class="hidden lg:flex items-center gap-4 xl:gap-6 text-sm font-medium flex-shrink-0">
-                    <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'text-sage-600 font-semibold' : 'text-stone-700 hover:text-sage-500' }}">{{ __('Trang Chủ') }}</a>
-                    <a href="{{ route('products.index') }}" class="{{ request()->routeIs('products.*') && !request('category') ? 'text-sage-600 font-semibold' : 'text-stone-700 hover:text-sage-500' }}">{{ __('Sản Phẩm') }}</a>
-                    <a href="{{ route('products.index', ['category' => 'cham-soc-da']) }}" class="{{ request('category') === 'cham-soc-da' ? 'text-sage-600 font-semibold' : 'text-stone-700 hover:text-sage-500' }}">{{ __('Chăm Sóc Da') }}</a>
-                    <a href="{{ route('blog.index') }}" class="{{ request()->routeIs('blog.*') ? 'text-sage-600 font-semibold' : 'text-stone-700 hover:text-sage-500' }}">{{ __('Blog Làm Đẹp') }}</a>
-                    <a href="{{ route('orders.track') }}" class="{{ request()->routeIs('orders.track') ? 'text-sage-600 font-semibold' : 'text-stone-700 hover:text-sage-500' }}">{{ __('Tra Cứu Đơn Hàng') }}</a>
+                    <a href="{{ route('home') }}" class="whitespace-nowrap {{ request()->routeIs('home') ? 'text-sage-600 font-semibold' : 'text-stone-700 hover:text-sage-500' }}">{{ __('Trang Chủ') }}</a>
+                    <a href="{{ route('products.index') }}" class="whitespace-nowrap {{ request()->routeIs('products.*') && !request('category') ? 'text-sage-600 font-semibold' : 'text-stone-700 hover:text-sage-500' }}">{{ __('Sản Phẩm') }}</a>
+                    <a href="{{ route('products.index', ['category' => 'cham-soc-da']) }}" class="whitespace-nowrap {{ request('category') === 'cham-soc-da' ? 'text-sage-600 font-semibold' : 'text-stone-700 hover:text-sage-500' }}">{{ __('Chăm Sóc Da') }}</a>
+                    <a href="{{ route('blog.index') }}" class="whitespace-nowrap {{ request()->routeIs('blog.*') ? 'text-sage-600 font-semibold' : 'text-stone-700 hover:text-sage-500' }}">{{ __('Blog Làm Đẹp') }}</a>
+                    <a href="{{ route('about') }}" class="whitespace-nowrap {{ request()->routeIs('about') ? 'text-sage-600 font-semibold' : 'text-stone-700 hover:text-sage-500' }}">{{ __('Về Chúng Tôi') }}</a>
+                    <a href="{{ route('orders.track') }}" class="whitespace-nowrap {{ request()->routeIs('orders.track') ? 'text-sage-600 font-semibold' : 'text-stone-700 hover:text-sage-500' }}">{{ __('Tra Cứu Đơn Hàng') }}</a>
                 </nav>
 
                 <!-- Cụm Chức Năng Phải: Ngôn Ngữ (VI/EN) + Hồ Sơ Khách Hàng + Giỏ Hàng + Nút Menu Mobile/Tablet -->
@@ -225,6 +228,9 @@
                 <a href="{{ route('blog.index') }}" class="px-3 py-1.5 rounded-full transition {{ request()->routeIs('blog.*') ? 'bg-sage-500 text-white shadow-2xs' : 'bg-white text-stone-700 border border-sage-100 hover:bg-sage-50' }}">
                     {{ __('Blog Làm Đẹp') }}
                 </a>
+                <a href="{{ route('about') }}" class="px-3 py-1.5 rounded-full transition {{ request()->routeIs('about') ? 'bg-sage-500 text-white shadow-2xs' : 'bg-white text-stone-700 border border-sage-100 hover:bg-sage-50' }}">
+                    {{ __('Về Chúng Tôi') }}
+                </a>
                 <a href="{{ route('orders.track') }}" class="px-3 py-1.5 rounded-full transition {{ request()->routeIs('orders.track') ? 'bg-sage-500 text-white shadow-2xs' : 'bg-white text-stone-700 border border-sage-100 hover:bg-sage-50' }}">
                     {{ __('Tra Cứu Đơn Hàng') }}
                 </a>
@@ -247,6 +253,9 @@
                     </a>
                     <a href="{{ route('blog.index') }}" class="p-2.5 rounded-xl bg-white border border-sage-100 text-stone-800 hover:bg-sage-50 flex items-center gap-2">
                         <span>📖</span> <span>{{ __('Blog Làm Đẹp') }}</span>
+                    </a>
+                    <a href="{{ route('about') }}" class="p-2.5 rounded-xl bg-white border border-sage-100 text-stone-800 hover:bg-sage-50 flex items-center gap-2">
+                        <span>💎</span> <span>{{ __('Về Chúng Tôi') }}</span>
                     </a>
                     <a href="{{ route('orders.track') }}" class="p-2.5 rounded-xl bg-white border border-sage-100 text-stone-800 hover:bg-sage-50 flex items-center gap-2">
                         <span>📦</span> <span>{{ __('Tra Cứu Đơn Hàng') }}</span>
@@ -305,7 +314,7 @@
          7. NGĂN KÉO GIỎ HÀNG TRƯỢT NGANG (SLIDE-OVER CART DRAWER)
          - Cho phép tăng (+) / giảm (−) số lượng từng sản phẩm ngay trong giỏ.
          - Thanh tiến trình ưu đãi miễn phí vận chuyển dùng màu Terracotta nổi bật
-           khi đơn hàng chưa đạt 500.000₫.
+           khi đơn hàng chưa đạt 900.000₫.
          ===================================================================== -->
     <div id="cart-drawer" class="fixed inset-0 z-50 {{ session('open_cart_drawer') ? '' : 'hidden' }}">
         <div class="fixed inset-0 bg-stone-900/40 backdrop-blur-xs" onclick="document.getElementById('cart-drawer').classList.add('hidden')"></div>
@@ -369,15 +378,17 @@
 
             @if(count($cart) > 0)
                 @php
-                    $drawerShippingFee = $cartTotal < 500000 ? 30000 : 0;
-                    $drawerFreeShipDiff = max(0, 500000 - $cartTotal);
-                    $drawerProgressPercent = min(100, (int) round(($cartTotal / 500000) * 100));
+                    $drawerFreeShipThreshold = \App\Services\CheckoutService::FREE_SHIPPING_THRESHOLD;
+                    $drawerStandardFee = \App\Services\CheckoutService::STANDARD_SHIPPING_FEE;
+                    $drawerShippingFee = $cartTotal < $drawerFreeShipThreshold ? $drawerStandardFee : 0;
+                    $drawerFreeShipDiff = max(0, $drawerFreeShipThreshold - $cartTotal);
+                    $drawerProgressPercent = min(100, (int) round(($cartTotal / $drawerFreeShipThreshold) * 100));
                 @endphp
                 <div class="p-6 bg-white border-t border-sage-100 space-y-3.5">
                     <div class="{{ $drawerFreeShipDiff > 0 ? 'bg-terracotta-50/80 border-terracotta-200' : 'bg-[#F5FAF7] border-sage-100' }} border rounded-2xl p-3 space-y-1.5 text-xs">
                         @if($drawerFreeShipDiff > 0)
                             <p class="text-terracotta-900">
-                                🚚 Mua thêm <strong class="text-terracotta-600 font-bold">{{ number_format($drawerFreeShipDiff, 0, ',', '.') }}₫</strong> để được <strong>Miễn phí vận chuyển toàn quốc</strong> (đơn từ 500.000₫)
+                                🚚 Mua thêm <strong class="text-terracotta-600 font-bold">{{ number_format($drawerFreeShipDiff, 0, ',', '.') }}₫</strong> để được <strong>Miễn phí vận chuyển toàn quốc</strong> (đơn từ {{ number_format($drawerFreeShipThreshold, 0, ',', '.') }}₫)
                             </p>
                         @else
                             <p class="text-emerald-700 font-semibold">
@@ -436,7 +447,7 @@
                 <div class="bg-gradient-to-r from-sage-500 to-sage-600 px-6 py-5 text-white flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="w-12 h-12 rounded-2xl bg-white/95 p-1.5 shadow-sm flex items-center justify-center flex-shrink-0">
-                            <img src="{{ asset('logo.png') }}?v=3" alt="SHINE Beauty Logo" width="40" height="40" class="w-10 h-10 object-contain">
+                            <img src="{{ asset('logo.png') }}?v=4" alt="SHINE Beauty Logo" width="40" height="40" class="w-10 h-10 object-contain">
                         </div>
                         <div>
                             <span class="text-[10px] font-bold uppercase tracking-widest text-sage-100 block">Thành Viên SHINE Beauty</span>
@@ -805,7 +816,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 grid grid-cols-1 md:grid-cols-4 gap-10">
             <div class="space-y-3">
                 <div class="flex items-center gap-3">
-                    <img src="{{ asset('logo-footer.png') }}?v=1" alt="SHINE Beauty Logo" class="w-14 h-14 object-contain drop-shadow-sm">
+                    <img src="{{ asset('logo-footer.png') }}?v=5" alt="SHINE Beauty Logo" class="w-14 h-14 object-contain drop-shadow-sm">
                     <span class="font-serif text-2xl font-bold text-white">
                         SHINE <span class="text-sage-400 italic font-normal">Beauty</span>
                     </span>
@@ -822,6 +833,7 @@
                     <li><a href="{{ route('products.index', ['category' => 'cham-soc-co-the']) }}" class="hover:text-white">Chăm sóc cơ thể</a></li>
                     <li><a href="{{ route('products.index', ['category' => 'nuoc-hoa']) }}" class="hover:text-white">Nước hoa chính hãng</a></li>
                     <li><a href="{{ route('blog.index') }}" class="hover:text-white">Blog mỹ phẩm &amp; chăm sóc da</a></li>
+                    <li><a href="{{ route('about') }}" class="hover:text-white">Về Chúng Tôi</a></li>
                 </ul>
             </div>
             <div>
@@ -837,7 +849,7 @@
                 <h4 class="text-xs font-bold uppercase tracking-widest text-sage-400 mb-3">Liên Hệ & Hỗ Trợ</h4>
                 <p class="text-xs text-stone-400 leading-relaxed">
                     Hotline tư vấn da liễu: 1900 6868<br>
-                    Cửa Hàng: 28 Phạm Văn Chiêu, Phường Thông Tây Hội, Tp. Hồ Chí Minh<br>
+                    Cửa Hàng: Đường Phạm Văn Chiêu, Phường Thông Tây Hội, TP Hồ Chí Minh<br>
                     Chúng tôi cam kết cung cấp sản phẩm chính hãng 100%, đi kèm tem phụ tiếng Việt theo đúng quy định.
                 </p>
             </div>

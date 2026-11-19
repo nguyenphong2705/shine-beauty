@@ -70,4 +70,18 @@ class HomeController extends Controller
             'selectedSkin'
         ));
     }
+
+    /**
+     * Hiển thị trang Giới thiệu thương hiệu SHINE Beauty (Về Chúng Tôi).
+     *
+     * @return View Giao diện trang giới thiệu (about.blade.php)
+     */
+    public function about(): View
+    {
+        $categories = Cache::remember('home.categories.v1', 300, fn () => Category::withCount('products')->get());
+        $brands = Cache::remember('home.brands.v1', 300, fn () => Brand::withCount('products')->get());
+        $totalProductsCount = Cache::remember('home.total_products_count', 300, fn () => Product::count());
+
+        return view('about', compact('categories', 'brands', 'totalProductsCount'));
+    }
 }

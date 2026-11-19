@@ -85,7 +85,7 @@ class BankTransferPaymentTest extends TestCase
             'volume' => '30ml',
         ]);
 
-        // Gửi kèm price=1₫ giả mạo từ client -> Backend phải bỏ qua và tính đúng 2 * 260.000 = 520.000₫ (Miễn phí ship vì >= 500k)
+        // Gửi kèm price=1₫ giả mạo từ client -> Backend phải bỏ qua và tính đúng 2 * 260.000 = 520.000₫ + 15.000₫ ship nội thành = 535.000₫ (vì < 900.000₫)
         $response = $this->postJson('/api/orders', [
             'customer_name' => 'Trần Thanh Tuyền',
             'phone' => '0912345678',
@@ -104,7 +104,7 @@ class BankTransferPaymentTest extends TestCase
 
         $response->assertStatus(201)
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.total_amount', 520000)
+            ->assertJsonPath('data.total_amount', 535000)
             ->assertJsonPath('data.payment_status', 'PENDING_PAYMENT');
     }
 
@@ -446,5 +446,41 @@ class BankTransferPaymentTest extends TestCase
         $this->assertStringContainsString('FT2631900012', (string) $tx->reconciliation_note);
         $this->assertSame('PAID', $order->payment_status);
         $this->assertSame('CONFIRMED', $order->order_status);
+    }
+
+    /**
+     * 13. Ngưỡng miễn phí vận chuyển là từ 900.000₫ trở lên.
+     */
+    public function test_free_shipping_threshold_is_900000_vnd(): void
+    {
+        $checkoutService = app(\App\Services\CheckoutService::class);
+
+        $underInner = $checkoutService->calculateShippingDetails(899000, 899000, 'ZONE_BASED', 'TP. Hồ Chí Minh', 'Quận 1');
+        $this->assertSame(15000, $underInner['fee']);
+        $this->assertSame('ZONE_INNER', $underInner['zone_code']);
+
+        $underProvince = $checkoutService->calculateShippingDetails(899000, 899000, 'ZONE_BASED', 'Đà Nẵng', 'Quận Hải Châu');
+        $this->assertSame(35000, $underProvince['fee']);
+        $this->assertSame('ZONE_PROVINCE', $underProvince['zone_code']);
+
+        $atThreshold = $checkoutService->calculateShippingDetails(900000, 900000, 'ZONE_BASED', 'Đà Nẵng', 'Quận Hải Châu');
+        $this->assertSame(0, $atThreshold['fee']);
+        $this->assertSame('FREE_SHIP', $atThreshold['zone_code']);
+
+        $overThreshold = $checkoutService->calculateShippingDetails(950000, 950000, 'ZONE_BASED', 'TP. Hồ Chí Minh', 'Quận 1');
+        $this->assertSame(0, $overThreshold['fee']);
+        $this->assertSame('FREE_SHIP', $overThreshold['zone_code']);
+
+        $summaryUnder = $checkoutService->calculateCartSummary(
+            [['id' => 1, 'price' => 899000, 'quantity' => 1]],
+            null,
+            'ZONE_BASED',
+            'TP. Hồ Chí Minh',
+            'Quận 1'
+        );
+        $this->assertSame(900000, $summaryUnder['freeShippingThreshold']);
+        $this->assertSame(1000, $summaryUnder['amountNeededForFreeShip']);
+        $this->assertSame(15000, $summaryUnder['shippingFee']);
+        $this->assertSame(914000, $summaryUnder['totalAmount']);
     }
 }

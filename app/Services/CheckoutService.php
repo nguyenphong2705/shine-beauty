@@ -16,7 +16,7 @@ use RuntimeException;
 
 class CheckoutService
 {
-    public const FREE_SHIPPING_THRESHOLD = 500000;
+    public const FREE_SHIPPING_THRESHOLD = 900000;
     public const STANDARD_SHIPPING_FEE = 15000;
 
     // 1. Bảng giá Phí cố định (Flat Rate)
@@ -30,7 +30,7 @@ class CheckoutService
     public const ZONE_REMOTE_AREA_FEE = 50000;     // Vùng 4: Vùng sâu vùng xa / Hải đảo (50.000₫)
 
     /**
-     * Tính phí vận chuyển cho đơn dưới 500.000₫ theo 2 phương thức:
+     * Tính phí vận chuyển cho đơn dưới 900.000₫ theo 2 phương thức:
      * - FLAT_RATE: Phí cố định (15.000₫ nội thành TP.HCM/Hà Nội, 35.000₫ ngoại tỉnh)
      * - ZONE_BASED: Tính theo khu vực (Nội thành 15.000₫, Ngoại thành 25.000₫, Liên tỉnh 35.000₫, Vùng sâu vùng xa 50.000₫)
      *
@@ -49,7 +49,7 @@ class CheckoutService
             return [
                 'fee' => 0,
                 'zone_code' => 'FREE_SHIP',
-                'zone_label' => 'Miễn phí vận chuyển toàn quốc (Đơn từ 500.000₫)',
+                'zone_label' => 'Miễn phí vận chuyển toàn quốc (Đơn từ 900.000₫)',
                 'mode' => $mode,
             ];
         }

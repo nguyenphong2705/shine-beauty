@@ -159,7 +159,7 @@
         <div class="shine-loader-ring-outer"></div>
         <div class="shine-loader-ring-inner"></div>
         <div class="shine-loader-logo-box">
-            <img src="{{ asset('logo-menu.svg') }}?v=1"
+            <img src="{{ asset('logo.png') }}?v=4"
                  alt="SHINE Beauty Logo"
                  width="52"
                  height="52"
