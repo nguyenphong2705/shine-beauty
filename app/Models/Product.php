@@ -26,6 +26,7 @@ class Product extends Model
         'skin_type',
         'volume',
         'is_best_seller',
+        'is_active',
     ];
 
     protected function casts(): array
@@ -33,10 +34,16 @@ class Product extends Model
         return [
             'images' => 'array',
             'is_best_seller' => 'boolean',
+            'is_active' => 'boolean',
             'price' => 'integer',
             'sale_price' => 'integer',
             'stock' => 'integer',
         ];
+    }
+
+    public function scopeVisible($query)
+    {
+        return $query->where('is_active', true);
     }
 
     public function category(): BelongsTo
@@ -52,6 +59,11 @@ class Product extends Model
     public function orderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(ProductReview::class);
     }
 
     public function getEffectivePriceAttribute(): int

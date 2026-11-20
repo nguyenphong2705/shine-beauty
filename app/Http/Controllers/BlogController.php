@@ -690,7 +690,8 @@ class BlogController extends Controller
             ]
         );
 
-        $recommendedProducts = \Illuminate\Support\Facades\Cache::remember('blog.recommended_products.v1', 300, fn () => Product::with(['brand', 'category'])
+        $recommendedProducts = \Illuminate\Support\Facades\Cache::remember('blog.recommended_products.v1', 300, fn () => Product::visible()
+            ->with(['brand', 'category'])
             ->latest('id')
             ->take(4)
             ->get());
@@ -732,7 +733,7 @@ class BlogController extends Controller
             $relatedPosts = $allPosts->where('slug', '!=', $slug)->take(3)->values();
         }
 
-        $relatedProductsQuery = Product::with(['brand', 'category']);
+        $relatedProductsQuery = Product::visible()->with(['brand', 'category']);
         if (!empty($post['related_category_slug'])) {
             $relatedProductsQuery->whereHas('category', function ($q) use ($post) {
                 $q->where('slug', $post['related_category_slug']);
@@ -740,7 +741,7 @@ class BlogController extends Controller
         }
         $relatedProducts = $relatedProductsQuery->take(4)->get();
         if ($relatedProducts->isEmpty()) {
-            $relatedProducts = Product::with(['brand', 'category'])->take(4)->get();
+            $relatedProducts = Product::visible()->with(['brand', 'category'])->take(4)->get();
         }
 
         return view('blog.show', [

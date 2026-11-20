@@ -1169,18 +1169,36 @@
         @endif
 
         <script>
-            function handleCancelOrderSubmit(event, orderId, orderPhone, isOwnerPhoneMatched) {
+            async function handleCancelOrderSubmit(event, orderId, orderPhone, isOwnerPhoneMatched) {
+                const form = event.target;
+                if (form && form.dataset && form.dataset.shineConfirmed === '1') {
+                    delete form.dataset.shineConfirmed;
+                    return true;
+                }
+                event.preventDefault();
+
                 if (!isOwnerPhoneMatched) {
-                    event.preventDefault();
-                    alert('⚠️ Thông báo bảo mật Hủy Đơn Hàng:\nBạn phải đăng nhập đúng tài khoản có số điện thoại chính chủ đặt hàng (' + orderPhone + ') mới có quyền hủy đơn hàng #ORDER-' + orderId + '!');
+                    await shineNotice({
+                        type: 'warning',
+                        title: 'Bảo mật hủy đơn hàng',
+                        itemLabel: '#ORDER-' + orderId,
+                        message: 'Bạn phải đăng nhập đúng tài khoản có số điện thoại chính chủ đặt hàng (' + orderPhone + ') mới có quyền hủy đơn hàng này!'
+                    });
                     return false;
                 }
-                const confirmed = confirm('⚠️ Xác nhận Hủy Đơn Hàng #ORDER-' + orderId + ':\n\n• Số điện thoại chính chủ: ' + orderPhone + '\n• Đơn hàng sau khi hủy sẽ không thể khôi phục.\n\nBạn có chắc chắn muốn hủy đơn hàng này không?');
-                if (!confirmed) {
-                    event.preventDefault();
-                    return false;
+                const confirmed = await shineConfirm({
+                    type: 'danger',
+                    title: 'Xác nhận hủy đơn hàng',
+                    itemLabel: '#ORDER-' + orderId + ' • SĐT: ' + orderPhone,
+                    message: 'Bạn có chắc chắn muốn hủy đơn hàng này không?',
+                    detail: 'Đơn hàng sau khi hủy sẽ không thể khôi phục.',
+                    confirmText: 'Xác nhận hủy đơn'
+                });
+                if (confirmed && form) {
+                    form.dataset.shineConfirmed = '1';
+                    form.submit();
                 }
-                return true;
+                return false;
             }
         </script>
     </section>

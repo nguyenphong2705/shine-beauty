@@ -954,6 +954,7 @@
         }
     </script>
 
+    @include('partials.confirm-modal')
     @include('partials.i18n-en')
 </body>
 </html>

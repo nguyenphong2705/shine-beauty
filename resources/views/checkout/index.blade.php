@@ -297,7 +297,13 @@
                         </div>
                         @if($isSuccessOrderPhoneMatched)
                             <form action="{{ route('customer.orders.cancel', $successOrder) }}" method="POST"
-                                  onsubmit="return confirm('⚠️ Xác nhận Hủy Đơn Hàng #ORDER-{{ $successOrder->id }} (SĐT chính chủ: {{ addslashes($successOrder->phone) }}):\n\nBạn có chắc chắn muốn hủy đơn hàng này không?');"
+                                  data-confirm="true"
+                                  data-confirm-type="danger"
+                                  data-confirm-title="Xác nhận hủy đơn hàng"
+                                  data-confirm-item="#ORDER-{{ $successOrder->id }} • SĐT: {{ $successOrder->phone }}"
+                                  data-confirm-message="Bạn có chắc chắn muốn hủy đơn hàng này không?"
+                                  data-confirm-detail="Đơn hàng sau khi hủy sẽ không thể khôi phục."
+                                  data-confirm-btn="Xác nhận hủy đơn"
                                   class="flex-shrink-0">
                                 @csrf
                                 <input type="hidden" name="cancel_reason" value="Khách hàng hủy đơn ngay tại màn hình đặt hàng (đã xác thực đúng SĐT chính chủ)">
@@ -307,7 +313,7 @@
                             </form>
                         @else
                             <button type="button"
-                                    onclick="alert('⚠️ Thông báo Hủy Đơn Hàng:\nBạn phải đăng nhập đúng tài khoản có số điện thoại chính chủ đặt hàng ({{ addslashes($successOrder->phone) }}) mới được phép hủy đơn hàng #ORDER-{{ $successOrder->id }}!');"
+                                    onclick="shineNotice({ type: 'warning', title: 'Không thể hủy đơn hàng', itemLabel: '#ORDER-{{ $successOrder->id }}', message: 'Bạn phải đăng nhập đúng tài khoản có số điện thoại chính chủ đặt hàng ({{ addslashes($successOrder->phone) }}) mới được phép hủy đơn hàng này!' });"
                                     class="inline-flex items-center gap-1.5 bg-white hover:bg-red-100 text-red-600 border border-red-300 font-bold text-xs px-4 py-2.5 rounded-full transition cursor-pointer flex-shrink-0">
                                 ✕ Hủy Đơn Hàng
                             </button>

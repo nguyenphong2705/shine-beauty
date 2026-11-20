@@ -36,8 +36,9 @@ class HomeController extends Controller
         $brands = Cache::remember('home.brands.v1', 300, fn () => Brand::withCount('products')->get());
 
         // 2. Lấy tổng số sản phẩm và top 6 sản phẩm bán chạy nhất (Best Sellers)
-        $totalProductsCount = Cache::remember('home.total_products_count', 300, fn () => Product::count());
-        $bestSellers = Cache::remember('home.best_sellers.v1', 300, fn () => Product::with(['category', 'brand'])
+        $totalProductsCount = Cache::remember('home.total_products_count', 300, fn () => Product::visible()->count());
+        $bestSellers = Cache::remember('home.best_sellers.v1', 300, fn () => Product::visible()
+            ->with(['category', 'brand'])
             ->where('is_best_seller', true)
             ->latest()
             ->take(6)
@@ -45,7 +46,8 @@ class HomeController extends Controller
 
         // 4. Xử lý bộ lọc sản phẩm theo loại da (Skin Explorer)
         $selectedSkin = $request->query('skin_type', 'Tất cả');
-        $skinQuery = Product::with(['category', 'brand'])
+        $skinQuery = Product::visible()
+            ->with(['category', 'brand'])
             ->latest();
 
         if ($selectedSkin !== 'Tất cả') {
@@ -80,7 +82,7 @@ class HomeController extends Controller
     {
         $categories = Cache::remember('home.categories.v1', 300, fn () => Category::withCount('products')->get());
         $brands = Cache::remember('home.brands.v1', 300, fn () => Brand::withCount('products')->get());
-        $totalProductsCount = Cache::remember('home.total_products_count', 300, fn () => Product::count());
+        $totalProductsCount = Cache::remember('home.total_products_count', 300, fn () => Product::visible()->count());
 
         return view('about', compact('categories', 'brands', 'totalProductsCount'));
     }

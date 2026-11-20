@@ -71,7 +71,7 @@ Route::get('/gioi-thieu', [HomeController::class, 'about'])->name('about');
  * - Chức năng: Liệt kê tự động Trang chủ, Trang cửa hàng, các Danh mục và toàn bộ URL chi tiết sản phẩm.
  */
 Route::get('/sitemap.xml', function () {
-    $products = Product::select(['slug', 'updated_at'])->latest('updated_at')->get();
+    $products = Product::visible()->select(['slug', 'updated_at'])->latest('updated_at')->get();
     $categories = Category::select(['slug'])->get();
 
     $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
@@ -163,6 +163,8 @@ Route::get('/san-pham', [ProductController::class, 'index'])->name('products.ind
  * - Chức năng: Xem mô tả, hoạt chất/thành phần, hình ảnh, đánh giá và 4 sản phẩm liên quan.
  */
 Route::get('/san-pham/{slug}', [ProductController::class, 'show'])->name('products.show');
+Route::post('/san-pham/{slug}/danh-gia', [ProductController::class, 'storeReview'])->name('products.reviews.store');
+Route::delete('/san-pham/{slug}/danh-gia/{review}', [ProductController::class, 'destroyReview'])->name('products.reviews.destroy');
 
 /**
  * Danh mục Blog Mỹ Phẩm & Chăm Sóc Da (/blog và /blog/{slug}).
@@ -541,6 +543,12 @@ Route::patch('/quan-tri/san-pham/{product}/ton-kho', [AdminController::class, 'u
 Route::patch('/quan-tri/san-pham/{product}/ban-chay', [AdminController::class, 'toggleBestSeller'])->name('admin.products.best-seller');
 
 /**
+ * Bật / tắt trạng thái ẩn / hiện sản phẩm trên trang chủ & cửa hàng.
+ * - Phương thức: PATCH | Đường dẫn: /quan-tri/san-pham/{product}/trang-thai | Controller: AdminController@toggleProductVisibility
+ */
+Route::patch('/quan-tri/san-pham/{product}/trang-thai', [AdminController::class, 'toggleProductVisibility'])->name('admin.products.toggle-visibility');
+
+/**
  * Xóa một sản phẩm và ảnh cục bộ liên quan khỏi hệ thống.
  * - Phương thức: DELETE | Đường dẫn: /quan-tri/san-pham/{product} | Controller: AdminController@destroyProduct
  */
@@ -564,6 +572,10 @@ Route::patch('/quan-tri/don-hang/{order}/xac-thuc-thanh-toan', [AdminController:
  */
 Route::get('/quan-tri/giao-dich-thanh-toan', [AdminController::class, 'payments'])->name('admin.payments.index');
 Route::post('/quan-tri/giao-dich-thanh-toan/{transaction}/doi-soat', [AdminController::class, 'reconcilePaymentTransaction'])->name('admin.payments.reconcile');
+
+// --- Quản lý Bình luận & Đánh giá Sản phẩm ---
+Route::get('/quan-tri/binh-luan', [AdminController::class, 'reviews'])->name('admin.reviews.index');
+Route::delete('/quan-tri/binh-luan/{review}', [AdminController::class, 'destroyReview'])->name('admin.reviews.destroy');
 
 /**
  * Xóa một đơn hàng khỏi hệ thống quản trị.

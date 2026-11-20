@@ -399,7 +399,8 @@ class CustomerAuthController extends Controller
             ->get();
 
         // Lấy danh sách tất cả sản phẩm nổi bật để khách khám phá nhanh
-        $featuredProducts = Product::with(['brand', 'category'])
+        $featuredProducts = Product::visible()
+            ->with(['brand', 'category'])
             ->where('stock', '>', 0)
             ->latest()
             ->take(6)

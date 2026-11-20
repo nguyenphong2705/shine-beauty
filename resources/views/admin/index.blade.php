@@ -212,6 +212,9 @@
             <a href="{{ route('admin.payments.index') }}" class="px-3 py-1.5 rounded-xl whitespace-nowrap transition {{ $activePage === 'payments' ? 'bg-sage-500 text-white shadow-sm' : 'bg-stone-800/80 text-stone-300' }}">
                 🏦 Đối Soát SePay ({{ isset($paymentTransactions) ? $paymentTransactions->count() : 0 }})
             </a>
+            <a href="{{ route('admin.reviews.index') }}" class="px-3 py-1.5 rounded-xl whitespace-nowrap transition {{ $activePage === 'reviews' ? 'bg-sage-500 text-white shadow-sm' : 'bg-stone-800/80 text-stone-300' }}">
+                💬 Bình Luận ({{ isset($allReviews) ? $allReviews->count() : 0 }})
+            </a>
         </div>
     </header>
 
@@ -269,6 +272,13 @@
                             <span class="truncate">5. Đối Soát SePay</span>
                         </span>
                         <span class="flex-shrink-0 min-w-[26px] text-center text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-full {{ $activePage === 'payments' ? 'bg-white/20 text-white' : 'bg-stone-800 text-sage-300' }}">{{ isset($paymentTransactions) ? $paymentTransactions->count() : 0 }}</span>
+                    </a>
+                    <a href="{{ route('admin.reviews.index') }}" title="6. Quản Lý Bình Luận & Đánh Giá" class="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl transition {{ $activePage === 'reviews' ? 'bg-sage-500 text-white shadow-sm' : 'text-stone-300 hover:bg-stone-800 hover:text-white' }}">
+                        <span class="flex items-center gap-2.5 min-w-0">
+                            <span class="flex-shrink-0">💬</span>
+                            <span class="truncate">6. Quản Lý Bình Luận</span>
+                        </span>
+                        <span class="flex-shrink-0 min-w-[26px] text-center text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-full {{ $activePage === 'reviews' ? 'bg-white/20 text-white' : 'bg-stone-800 text-sage-300' }}">{{ isset($allReviews) ? $allReviews->count() : 0 }}</span>
                     </a>
                 </nav>
             </div>
@@ -469,7 +479,12 @@
                             </div>
                         </div>
                     </div>
-                    <form action="{{ route('admin.products.standardize') }}" method="POST" class="flex-shrink-0">
+                    <form action="{{ route('admin.products.standardize') }}" method="POST" class="flex-shrink-0"
+                          data-confirm="true"
+                          data-confirm-type="warning"
+                          data-confirm-title="Chuẩn hóa SKU & tồn kho"
+                          data-confirm-message="Hệ thống sẽ chuẩn hóa lại toàn bộ mã SKU (LMN-SP...) và đặt tồn kho tiêu chuẩn (20 SP/mã) cho các sản phẩm."
+                          data-confirm-btn="Chuẩn hóa ngay">
                         @csrf
                         <button type="submit" class="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl shadow-sm transition whitespace-nowrap cursor-pointer">
                             🔄 Chuẩn hóa SKU & Kho (20)
@@ -520,6 +535,7 @@
             </div>
         </section>
         @endif
+
 
         @if($activePage === 'orders')
         <!-- ========================================================================= -->
@@ -640,7 +656,9 @@
                             </ul>
 
                             <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
-                                <form action="{{ route('admin.orders.status', $order) }}" method="POST" class="flex flex-wrap items-center gap-1.5">
+                                <form action="{{ route('admin.orders.status', $order) }}" method="POST" class="flex flex-wrap items-center gap-1.5"
+                                      data-confirm-status="true"
+                                      data-order-id="{{ $order->id }}">
                                     @csrf
                                     @method('PATCH')
                                     <select name="status" class="text-xs rounded-xl border border-stone-300 px-2.5 py-1.5 bg-white">
@@ -655,7 +673,13 @@
 
                                 <div class="flex flex-wrap items-center gap-1.5">
                                     @if($isQrOrder)
-                                        <form action="{{ route('admin.orders.verify-payment', $order) }}" method="POST" class="flex flex-wrap items-center gap-1.5">
+                                        <form action="{{ route('admin.orders.verify-payment', $order) }}" method="POST" class="flex flex-wrap items-center gap-1.5"
+                                              data-confirm="true"
+                                              data-confirm-type="{{ !$isQrPaid ? 'info' : 'warning' }}"
+                                              data-confirm-title="{{ !$isQrPaid ? 'Xác nhận đã thanh toán' : 'Đánh dấu chưa thanh toán' }}"
+                                              data-confirm-item="#ORDER-{{ $order->id }}"
+                                              data-confirm-message="{{ !$isQrPaid ? 'Xác nhận đơn hàng này đã nhận được tiền chuyển khoản?' : 'Bạn muốn chuyển trạng thái thanh toán của đơn hàng này về chưa thanh toán?' }}"
+                                              data-confirm-btn="{{ !$isQrPaid ? 'Xác thực chuyển khoản' : 'Xác nhận thay đổi' }}">
                                             @csrf
                                             @method('PATCH')
                                             @if(!$isQrPaid)
@@ -673,7 +697,14 @@
                                         </form>
                                     @endif
 
-                                    <form action="{{ route('admin.orders.destroy', $order) }}" method="POST" onsubmit="return confirm('Xóa đơn hàng #ORDER-{{ $order->id }}?')">
+                                    <form action="{{ route('admin.orders.destroy', $order) }}" method="POST"
+                                          data-confirm="true"
+                                          data-confirm-type="danger"
+                                          data-confirm-title="Xác nhận xóa đơn hàng"
+                                          data-confirm-item="#ORDER-{{ $order->id }}"
+                                          data-confirm-message="Bạn có chắc chắn muốn xóa đơn hàng này khỏi hệ thống?"
+                                          data-confirm-detail="Dữ liệu đơn hàng sẽ bị xóa vĩnh viễn và không thể khôi phục."
+                                          data-confirm-btn="Xóa đơn hàng">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="text-xs text-red-500 hover:bg-red-50 px-2.5 py-1.5 rounded-xl border border-red-200 bg-white transition cursor-pointer">
@@ -793,7 +824,9 @@
                                     <td class="py-4 px-2.5 text-right">
                                         <div class="flex flex-col items-end gap-2">
                                             <div class="flex items-center justify-end gap-1.5">
-                                                <form action="{{ route('admin.orders.status', $order) }}" method="POST" class="flex items-center gap-1">
+                                                <form action="{{ route('admin.orders.status', $order) }}" method="POST" class="flex items-center gap-1"
+                                                      data-confirm-status="true"
+                                                      data-order-id="{{ $order->id }}">
                                                     @csrf
                                                     @method('PATCH')
                                                     <select name="status" class="w-28 text-xs rounded-xl border border-stone-300 px-2 py-1.5 bg-white">
@@ -806,7 +839,14 @@
                                                     </button>
                                                 </form>
 
-                                                <form action="{{ route('admin.orders.destroy', $order) }}" method="POST" onsubmit="return confirm('Xóa đơn hàng #ORDER-{{ $order->id }}?')">
+                                                <form action="{{ route('admin.orders.destroy', $order) }}" method="POST"
+                                                      data-confirm="true"
+                                                      data-confirm-type="danger"
+                                                      data-confirm-title="Xác nhận xóa đơn hàng"
+                                                      data-confirm-item="#ORDER-{{ $order->id }}"
+                                                      data-confirm-message="Bạn có chắc chắn muốn xóa đơn hàng này khỏi hệ thống?"
+                                                      data-confirm-detail="Dữ liệu đơn hàng sẽ bị xóa vĩnh viễn và không thể khôi phục."
+                                                      data-confirm-btn="Xóa đơn hàng">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="text-xs text-red-500 hover:bg-red-50 px-2 py-1.5 rounded-xl border border-red-200 transition cursor-pointer whitespace-nowrap">
@@ -816,7 +856,13 @@
                                             </div>
 
                                             @if($isQrOrder)
-                                                <form action="{{ route('admin.orders.verify-payment', $order) }}" method="POST" class="flex items-center justify-end gap-1">
+                                                <form action="{{ route('admin.orders.verify-payment', $order) }}" method="POST" class="flex items-center justify-end gap-1"
+                                                      data-confirm="true"
+                                                      data-confirm-type="{{ !$isQrPaid ? 'info' : 'warning' }}"
+                                                      data-confirm-title="{{ !$isQrPaid ? 'Xác nhận đã thanh toán' : 'Đánh dấu chưa thanh toán' }}"
+                                                      data-confirm-item="#ORDER-{{ $order->id }}"
+                                                      data-confirm-message="{{ !$isQrPaid ? 'Xác nhận đơn hàng này đã nhận được tiền chuyển khoản?' : 'Bạn muốn chuyển trạng thái thanh toán của đơn hàng này về chưa thanh toán?' }}"
+                                                      data-confirm-btn="{{ !$isQrPaid ? 'Xác thực chuyển khoản' : 'Xác nhận thay đổi' }}">
                                                     @csrf
                                                     @method('PATCH')
                                                     @if(!$isQrPaid)
@@ -844,6 +890,7 @@
         </section>
         @endif
 
+
         @if($activePage === 'products')
         <!-- ========================================================================= -->
         <!-- SECTION 3: XEM, THÊM, SỬA, XÓA SẢN PHẨM MỸ PHẨM ĐẦY ĐỦ -->
@@ -867,7 +914,15 @@
                     @endif
                 </div>
 
-                <form action="{{ $editingProduct ? route('admin.products.update', $editingProduct) : route('admin.products.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                <form action="{{ $editingProduct ? route('admin.products.update', $editingProduct) : route('admin.products.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4"
+                      @if($editingProduct)
+                          data-confirm="true"
+                          data-confirm-type="info"
+                          data-confirm-title="Lưu thay đổi sản phẩm"
+                          data-confirm-item="{{ $editingProduct->name }}"
+                          data-confirm-message="Bạn có chắc chắn muốn cập nhật thông tin sản phẩm này?"
+                          data-confirm-btn="Lưu thay đổi"
+                      @endif>
                     @csrf
                     @if($editingProduct)
                         @method('PUT')
@@ -1110,9 +1165,10 @@
 
                 <div class="space-y-2.5 max-h-[760px] overflow-y-auto admin-content-scroll pr-1">
                     @forelse($products as $product)
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 p-3.5 rounded-2xl border {{ $product->stock <= 0 ? 'border-red-200 bg-red-50/30' : ($product->stock <= 15 ? 'border-orange-200 bg-orange-50/30' : 'border-stone-200/70 bg-stone-50/50') }} hover:border-sage-300 transition">
+                        @php $isVisible = (bool) ($product->is_active ?? true); @endphp
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 p-3.5 rounded-2xl border {{ !$isVisible ? 'border-stone-300 bg-stone-100/80 opacity-80' : ($product->stock <= 0 ? 'border-red-200 bg-red-50/30' : ($product->stock <= 15 ? 'border-orange-200 bg-orange-50/30' : 'border-stone-200/70 bg-stone-50/50')) }} hover:border-sage-300 transition">
                             <div class="flex items-center gap-3.5 min-w-0 flex-1">
-                                <img src="{{ $product->first_image }}" alt="{{ $product->name }}" class="w-14 h-14 rounded-2xl object-cover bg-white border border-stone-200 flex-shrink-0">
+                                <img src="{{ $product->first_image }}" alt="{{ $product->name }}" class="w-14 h-14 rounded-2xl object-cover bg-white border border-stone-200 flex-shrink-0 {{ !$isVisible ? 'grayscale' : '' }}">
                                 <div class="min-w-0 flex-1">
                                     <div class="flex flex-wrap items-center gap-1.5">
                                         <span class="font-mono font-bold text-[10px] bg-stone-900 text-white px-2 py-0.5 rounded-md">
@@ -1120,6 +1176,9 @@
                                         </span>
                                         <span class="text-[10px] font-bold uppercase text-sage-500">{{ $product->brand->name ?? '' }}</span>
                                         <span class="text-[10px] text-stone-400">• {{ $product->category->name ?? '' }}</span>
+                                        @if(!$isVisible)
+                                            <span class="text-[10px] bg-stone-700 text-white font-bold px-2 py-0.5 rounded-full">ĐÃ ẨN</span>
+                                        @endif
                                         @if($product->is_best_seller)
                                             <span class="text-[10px] bg-[#D4728C] text-white border border-[#C25E79] font-bold px-2 py-0.5 rounded-full">✦ Best Seller</span>
                                         @endif
@@ -1146,10 +1205,36 @@
                             </div>
 
                             <div class="flex items-center justify-end gap-2 flex-shrink-0">
+                                <form action="{{ route('admin.products.toggle-visibility', $product) }}" method="POST"
+                                      data-confirm="true"
+                                      data-confirm-type="{{ $isVisible ? 'warning' : 'info' }}"
+                                      data-confirm-title="{{ $isVisible ? 'Xác nhận ẩn sản phẩm' : 'Xác nhận hiển thị sản phẩm' }}"
+                                      data-confirm-item="{{ $product->name }}"
+                                      data-confirm-message="{{ $isVisible ? 'Sản phẩm này sẽ bị ẩn khỏi trang chủ và cửa hàng. Bạn có chắc muốn ẩn?' : 'Sản phẩm này sẽ hiển thị trở lại trên trang chủ và cửa hàng?' }}"
+                                      data-confirm-btn="{{ $isVisible ? 'Ẩn sản phẩm' : 'Hiển thị sản phẩm' }}">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit"
+                                            title="{{ $isVisible ? 'Gạt để ẩn sản phẩm khỏi trang chủ' : 'Gạt để hiện sản phẩm lên trang chủ' }}"
+                                            class="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition whitespace-nowrap cursor-pointer {{ $isVisible ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100' : 'bg-stone-200/80 border-stone-300 text-stone-600 hover:bg-stone-200' }}">
+                                        <span class="relative inline-flex h-4 w-7 items-center rounded-full transition-colors {{ $isVisible ? 'bg-emerald-500' : 'bg-stone-400' }}">
+                                            <span class="inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform {{ $isVisible ? 'translate-x-3.5' : 'translate-x-0.5' }}"></span>
+                                        </span>
+                                        <span>{{ $isVisible ? 'Hiện' : 'Ẩn' }}</span>
+                                    </button>
+                                </form>
+
                                 <a href="{{ route('admin.products.index', ['edit_product' => $product->id]) }}" class="text-xs font-semibold bg-white hover:bg-sage-50 text-stone-700 border border-stone-200 px-3 py-1.5 rounded-xl transition whitespace-nowrap">
                                     Sửa
                                 </a>
-                                <form action="{{ route('admin.products.destroy', $product) }}" method="POST" onsubmit="return confirm('Xóa sản phẩm {{ $product->name }}?')">
+                                <form action="{{ route('admin.products.destroy', $product) }}" method="POST"
+                                      data-confirm="true"
+                                      data-confirm-type="danger"
+                                      data-confirm-title="Xác nhận xóa sản phẩm"
+                                      data-confirm-item="{{ $product->name }}"
+                                      data-confirm-message="Bạn có chắc chắn muốn xóa sản phẩm này khỏi cửa hàng?"
+                                      data-confirm-detail="Sản phẩm và dữ liệu liên quan sẽ bị xóa vĩnh viễn và không thể khôi phục."
+                                      data-confirm-btn="Xóa sản phẩm">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-xl transition whitespace-nowrap cursor-pointer">
@@ -1165,6 +1250,7 @@
             </div>
         </section>
         @endif
+
 
         @if($activePage === 'coupons')
         <!-- ========================================================================= -->
@@ -1241,14 +1327,27 @@
                                 </p>
 
                                 <div class="flex items-center gap-1.5 flex-shrink-0">
-                                    <form action="{{ route('admin.coupons.toggle', $coupon) }}" method="POST">
+                                    <form action="{{ route('admin.coupons.toggle', $coupon) }}" method="POST"
+                                          data-confirm="true"
+                                          data-confirm-type="warning"
+                                          data-confirm-title="Thay đổi trạng thái mã giảm giá"
+                                          data-confirm-item="{{ $coupon->code }}"
+                                          data-confirm-message="Bạn muốn {{ $coupon->is_active ? 'tạm tắt' : 'kích hoạt lại' }} mã giảm giá này?"
+                                          data-confirm-btn="{{ $coupon->is_active ? 'Tắt mã' : 'Bật mã' }}">
                                         @csrf
                                         @method('PATCH')
                                         <button type="submit" class="text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-stone-300 bg-white hover:bg-stone-50 whitespace-nowrap cursor-pointer">
                                             {{ $coupon->is_active ? 'Tắt' : 'Bật' }}
                                         </button>
                                     </form>
-                                    <form action="{{ route('admin.coupons.destroy', $coupon) }}" method="POST">
+                                    <form action="{{ route('admin.coupons.destroy', $coupon) }}" method="POST"
+                                          data-confirm="true"
+                                          data-confirm-type="danger"
+                                          data-confirm-title="Xác nhận xóa mã giảm giá"
+                                          data-confirm-item="{{ $coupon->code }}"
+                                          data-confirm-message="Bạn có chắc chắn muốn xóa mã giảm giá này?"
+                                          data-confirm-detail="Khách hàng sẽ không thể áp dụng mã này nữa sau khi xóa."
+                                          data-confirm-btn="Xóa mã">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="text-xs font-semibold px-2.5 py-1.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 whitespace-nowrap cursor-pointer">
@@ -1263,6 +1362,7 @@
             </div>
         </section>
         @endif
+
 
         @if($activePage === 'payments')
         <!-- =================================================================
@@ -1468,6 +1568,136 @@
                         @endforeach
                     </div>
                 @endif
+            </div>
+        </section>
+        @endif
+
+        @if($activePage === 'reviews')
+        <!-- ========================================================= -->
+        <!-- 6. QUẢN LÝ BÌNH LUẬN & ĐÁNH GIÁ SẢN PHẨM -->
+        <!-- ========================================================= -->
+        <section id="section-reviews" class="min-w-0 bg-white rounded-3xl border border-stone-200/80 p-5 sm:p-6 shadow-sm space-y-6">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-stone-100 pb-4">
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-widest text-sage-600">Quản lý đánh giá khách hàng</p>
+                    <h2 class="text-xl font-bold text-stone-900 mt-0.5">
+                        Bình Luận &amp; Đánh Giá Sản Phẩm
+                        <span class="text-sm font-normal text-stone-400">({{ $reviews->count() }}/{{ $allReviews->count() }})</span>
+                    </h2>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 text-xs">
+                    <span class="px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-bold">
+                        ★ TB: {{ $allReviews->count() > 0 ? number_format((float) $allReviews->avg('rating'), 1) : '0.0' }}/5
+                    </span>
+                    <span class="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
+                        ✓ Đã Mua: {{ $allReviews->where('is_verified_purchase', true)->count() }}
+                    </span>
+                </div>
+            </div>
+
+            {{-- Filter Bar --}}
+            <form action="{{ route('admin.reviews.index') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                <div class="sm:col-span-5">
+                    <input type="text"
+                           name="review_search"
+                           value="{{ $reviewSearch }}"
+                           placeholder="Tìm theo tên khách hàng, tên sản phẩm, nội dung..."
+                           class="w-full px-3.5 py-2 text-xs rounded-2xl border border-stone-200 bg-stone-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sage-300">
+                </div>
+                <div class="sm:col-span-3">
+                    <select name="review_rating" class="w-full px-3 py-2 text-xs rounded-2xl border border-stone-200 bg-stone-50 focus:bg-white focus:outline-none">
+                        <option value="ALL" {{ $reviewRating === 'ALL' ? 'selected' : '' }}>Tất cả số sao</option>
+                        @for($star = 5; $star >= 1; $star--)
+                            <option value="{{ $star }}" {{ (string) $reviewRating === (string) $star ? 'selected' : '' }}>{{ $star }} sao</option>
+                        @endfor
+                    </select>
+                </div>
+                <div class="sm:col-span-2">
+                    <select name="review_verified" class="w-full px-3 py-2 text-xs rounded-2xl border border-stone-200 bg-stone-50 focus:bg-white focus:outline-none">
+                        <option value="ALL" {{ $reviewVerified === 'ALL' ? 'selected' : '' }}>Mọi người dùng</option>
+                        <option value="VERIFIED" {{ $reviewVerified === 'VERIFIED' ? 'selected' : '' }}>✓ Đã Mua</option>
+                        <option value="UNVERIFIED" {{ $reviewVerified === 'UNVERIFIED' ? 'selected' : '' }}>Chưa mua</option>
+                    </select>
+                </div>
+                <div class="sm:col-span-2 flex gap-1.5">
+                    <button type="submit" class="flex-1 bg-stone-900 hover:bg-sage-600 text-white text-xs font-semibold px-3 py-2 rounded-2xl transition cursor-pointer">
+                        Lọc
+                    </button>
+                    @if($reviewSearch !== '' || $reviewRating !== 'ALL' || $reviewVerified !== 'ALL')
+                        <a href="{{ route('admin.reviews.index') }}" class="px-3 py-2 text-xs font-semibold rounded-2xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-600">
+                            Đặt lại
+                        </a>
+                    @endif
+                </div>
+            </form>
+
+            {{-- Reviews List --}}
+            <div class="space-y-3">
+                @forelse($reviews as $rev)
+                    <div class="p-4 rounded-2xl border border-stone-200/80 bg-stone-50/50 hover:border-sage-300 transition space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                            <div class="flex items-start gap-3 min-w-0">
+                                @if($rev->product)
+                                    <img src="{{ $rev->product->first_image }}" alt="{{ $rev->product->name }}" class="w-12 h-12 rounded-xl object-cover bg-white border border-stone-200 flex-shrink-0">
+                                @endif
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="font-bold text-sm text-stone-900">{{ $rev->user->name ?? 'Khách hàng' }}</span>
+                                        @if($rev->is_verified_purchase)
+                                            <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                                ✓ Đã Mua
+                                            </span>
+                                        @else
+                                            <span class="text-[10px] font-semibold text-stone-500 bg-stone-200/70 px-2 py-0.5 rounded-full">
+                                                Chưa mua
+                                            </span>
+                                        @endif
+                                        <span class="text-[11px] font-bold text-amber-500">
+                                            {{ str_repeat('★', (int) $rev->rating) }}{{ str_repeat('☆', 5 - (int) $rev->rating) }}
+                                        </span>
+                                        <span class="text-[11px] text-stone-400">• {{ $rev->created_at?->format('d/m/Y H:i') }}</span>
+                                    </div>
+
+                                    <p class="text-[11px] text-stone-500 mt-0.5">
+                                        {{ $rev->user->email ?? '' }}
+                                        @if(!empty($rev->user?->phone))
+                                            • {{ $rev->user->phone }}
+                                        @endif
+                                    </p>
+
+                                    @if($rev->product)
+                                        <a href="{{ route('products.show', $rev->product->slug) }}#product-reviews" target="_blank" class="inline-block text-xs font-semibold text-sage-600 hover:underline mt-1">
+                                            💄 {{ $rev->product->name }} ↗
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <form action="{{ route('admin.reviews.destroy', $rev) }}" method="POST"
+                                  data-confirm="true"
+                                  data-confirm-type="danger"
+                                  data-confirm-title="Xác nhận xóa bình luận"
+                                  data-confirm-item="{{ ($rev->user->name ?? 'Khách hàng') . ' • ' . ($rev->product->name ?? '') }}"
+                                  data-confirm-message="Bạn có chắc chắn muốn xóa bình luận này khỏi hệ thống?"
+                                  data-confirm-detail="Bình luận sau khi xóa sẽ không thể khôi phục."
+                                  data-confirm-btn="Xóa bình luận"
+                                  class="flex-shrink-0">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3 py-1.5 rounded-xl transition cursor-pointer whitespace-nowrap">
+                                    Xóa
+                                </button>
+                            </form>
+                        </div>
+
+                        <p class="text-xs sm:text-sm text-stone-700 bg-white rounded-xl border border-stone-200/70 px-3.5 py-2.5 whitespace-pre-line">{{ $rev->comment }}</p>
+                    </div>
+                @empty
+                    <div class="text-center py-12 text-xs text-stone-400">
+                        Chưa có bình luận nào khớp với bộ lọc.
+                    </div>
+                @endforelse
             </div>
         </section>
         @endif
@@ -1680,5 +1910,6 @@
         window.addEventListener('DOMContentLoaded', scrollToAdminHash);
         window.addEventListener('hashchange', scrollToAdminHash);
     </script>
+    @include('partials.confirm-modal')
 </body>
 </html>

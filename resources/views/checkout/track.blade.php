@@ -132,26 +132,48 @@
 </div>
 
 <script>
-    function confirmTrackCancelOrder(event, orderId, orderPhone, isLoggedIn, isOwnerPhoneMatched) {
+    async function confirmTrackCancelOrder(event, orderId, orderPhone, isLoggedIn, isOwnerPhoneMatched) {
+        const form = event.target;
+        if (form && form.dataset && form.dataset.shineConfirmed === '1') {
+            delete form.dataset.shineConfirmed;
+            return true;
+        }
+        event.preventDefault();
+
         if (!isLoggedIn) {
-            event.preventDefault();
-            alert('⚠️ Thông báo Hủy Đơn Hàng:\nVui lòng đăng nhập tài khoản có số điện thoại chính chủ (' + orderPhone + ') để hủy đơn hàng #ORDER-' + orderId + '!');
+            await shineNotice({
+                type: 'warning',
+                title: 'Yêu cầu đăng nhập',
+                itemLabel: '#ORDER-' + orderId,
+                message: 'Vui lòng đăng nhập tài khoản có số điện thoại chính chủ (' + orderPhone + ') để hủy đơn hàng này!'
+            });
             if (typeof openAuthModal === 'function') {
                 openAuthModal('login');
             }
             return false;
         }
         if (!isOwnerPhoneMatched) {
-            event.preventDefault();
-            alert('⚠️ Không thể hủy đơn hàng:\nTài khoản bạn đang đăng nhập không trùng với số điện thoại chính chủ của đơn hàng (' + orderPhone + '). Chỉ chính chủ SĐT đặt hàng mới có thể hủy đơn!');
+            await shineNotice({
+                type: 'warning',
+                title: 'Không thể hủy đơn hàng',
+                itemLabel: '#ORDER-' + orderId,
+                message: 'Tài khoản bạn đang đăng nhập không trùng với số điện thoại chính chủ của đơn hàng (' + orderPhone + '). Chỉ chính chủ SĐT đặt hàng mới có thể hủy đơn!'
+            });
             return false;
         }
-        const ok = confirm('⚠️ Xác nhận Hủy Đơn Hàng #ORDER-' + orderId + ' (SĐT chính chủ: ' + orderPhone + '):\n\nBạn có chắc chắn muốn hủy đơn hàng này không?');
-        if (!ok) {
-            event.preventDefault();
-            return false;
+        const ok = await shineConfirm({
+            type: 'danger',
+            title: 'Xác nhận hủy đơn hàng',
+            itemLabel: '#ORDER-' + orderId + ' • SĐT: ' + orderPhone,
+            message: 'Bạn có chắc chắn muốn hủy đơn hàng này không?',
+            detail: 'Đơn hàng sau khi hủy sẽ không thể khôi phục.',
+            confirmText: 'Xác nhận hủy đơn'
+        });
+        if (ok && form) {
+            form.dataset.shineConfirmed = '1';
+            form.submit();
         }
-        return true;
+        return false;
     }
 </script>
 @endsection

@@ -226,6 +226,254 @@
         </div>
     </div>
 
+    <!-- Product Reviews & Comments -->
+    <section id="product-reviews" class="pt-8 sm:pt-10 border-t border-sage-100 space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+            <div>
+                <p class="text-xs font-bold uppercase tracking-widest text-sage-600">Đánh giá & Bình luận</p>
+                <h2 class="font-serif text-xl sm:text-2xl font-bold text-stone-800 mt-1">
+                    Nhận Xét Từ Khách Hàng
+                    <span class="text-sm font-sans font-normal text-stone-500">({{ $totalReviews }} đánh giá)</span>
+                </h2>
+            </div>
+        </div>
+
+        {{-- Rating Summary + Form Grid --}}
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {{-- Rating Overview Card --}}
+            <div class="lg:col-span-5 bg-white rounded-3xl border border-sage-100 p-6 shadow-xs space-y-5">
+                <div class="flex items-center gap-5">
+                    <div class="text-center flex-shrink-0">
+                        <div class="text-4xl font-extrabold text-stone-900">
+                            {{ $totalReviews > 0 ? number_format($averageRating, 1) : '0.0' }}
+                        </div>
+                        <div class="flex items-center justify-center gap-0.5 mt-1.5 text-amber-400">
+                            @for($i = 1; $i <= 5; $i++)
+                                <svg class="w-4 h-4 {{ $i <= round($averageRating) ? 'text-amber-400' : 'text-stone-200' }}" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                </svg>
+                            @endfor
+                        </div>
+                        <p class="text-xs text-stone-500 mt-1">{{ $totalReviews }} lượt đánh giá</p>
+                    </div>
+
+                    <div class="flex-1 space-y-2">
+                        @for($star = 5; $star >= 1; $star--)
+                            @php $row = $ratingBreakdown[$star] ?? ['count' => 0, 'percent' => 0]; @endphp
+                            <div class="flex items-center gap-2 text-xs">
+                                <span class="w-8 font-semibold text-stone-600 text-right">{{ $star }} ★</span>
+                                <div class="flex-1 h-2 rounded-full bg-stone-100 overflow-hidden">
+                                    <div class="h-full rounded-full bg-amber-400 transition-all" style="width: {{ $row['percent'] }}%"></div>
+                                </div>
+                                <span class="w-7 text-stone-400 text-right">{{ $row['count'] }}</span>
+                            </div>
+                        @endfor
+                    </div>
+                </div>
+            </div>
+
+            {{-- Comment & Rating Form --}}
+            <div class="lg:col-span-7 bg-white rounded-3xl border border-sage-100 p-6 shadow-xs">
+                @auth
+                    <form action="{{ route('products.reviews.store', $product->slug) }}" method="POST" class="space-y-4">
+                        @csrf
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 text-sm">
+                                <span class="text-stone-500">Bình luận với tên:</span>
+                                <strong class="text-stone-800">{{ auth()->user()->name }}</strong>
+                                @if($hasCurrentUserPurchased)
+                                    <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                        ✓ Đã Mua
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- 1-5 Star Selector --}}
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-2">
+                                Đánh giá của bạn (1 – 5 sao) *
+                            </label>
+                            @php $selectedRating = (int) old('rating', 5); @endphp
+                            <input type="hidden" name="rating" id="review-rating-input" value="{{ $selectedRating }}">
+                            <div class="flex flex-wrap items-center gap-3">
+                                <div class="flex items-center gap-1" id="review-star-picker">
+                                    @for($star = 1; $star <= 5; $star++)
+                                        <button type="button"
+                                                data-star="{{ $star }}"
+                                                aria-label="Đánh giá {{ $star }} sao"
+                                                class="review-star-btn p-1 rounded-lg transition transform hover:scale-110 cursor-pointer focus:outline-none">
+                                            <svg class="w-7 h-7 {{ $star <= $selectedRating ? 'text-amber-400' : 'text-stone-200' }}" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                            </svg>
+                                        </button>
+                                    @endfor
+                                </div>
+                                <span id="review-rating-label" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                                    5 sao • Tuyệt vời
+                                </span>
+                            </div>
+                            @error('rating')
+                                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        {{-- Comment Input --}}
+                        <div>
+                            <label for="review-comment-input" class="block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1.5">
+                                Nội dung bình luận *
+                            </label>
+                            <textarea id="review-comment-input"
+                                      name="comment"
+                                      rows="3"
+                                      required
+                                      maxlength="1000"
+                                      placeholder="Chia sẻ cảm nhận của bạn về mùi hương, kết cấu, hiệu quả trên da..."
+                                      class="w-full rounded-2xl border border-stone-200 bg-stone-50 focus:bg-white px-4 py-3 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-sage-400 transition">{{ old('comment') }}</textarea>
+                            @error('comment')
+                                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button type="submit"
+                                    class="inline-flex items-center gap-2 bg-sage-600 hover:bg-sage-700 text-white font-semibold text-sm px-6 py-2.5 rounded-full shadow-sm transition cursor-pointer">
+                                Gửi Đánh Giá
+                            </button>
+                        </div>
+                    </form>
+                @else
+                    <div class="h-full flex flex-col items-center justify-center text-center py-6 px-4 space-y-3 bg-sage-50/50 rounded-2xl border border-dashed border-sage-200">
+                        <div class="w-11 h-11 rounded-2xl bg-white border border-sage-200 flex items-center justify-center text-sage-600 shadow-xs">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                        </div>
+                        <div class="space-y-1 max-w-md">
+                            <h3 class="text-base font-bold text-stone-800">Đăng nhập để bình luận & đánh giá</h3>
+                            <p class="text-xs sm:text-sm text-stone-500">
+                                Vui lòng đăng nhập tài khoản SHINE Beauty để gửi nhận xét và đánh giá sản phẩm từ 1 đến 5 sao.
+                            </p>
+                        </div>
+                        <button type="button"
+                                onclick="if (typeof openAuthModal === 'function') { openAuthModal('login'); } else { window.location.href = '{{ route('customer.login') }}'; }"
+                                class="inline-flex items-center gap-2 bg-sage-600 hover:bg-sage-700 text-white font-semibold text-sm px-6 py-2.5 rounded-full shadow-sm transition cursor-pointer">
+                            Đăng Nhập Để Bình Luận
+                        </button>
+                    </div>
+                @endauth
+            </div>
+        </div>
+
+        {{-- Reviews List --}}
+        <div class="space-y-4">
+            @forelse($reviews as $review)
+                @php
+                    $reviewerName = $review->user->name ?? 'Khách hàng';
+                    $reviewerInitial = mb_strtoupper(mb_substr($reviewerName, 0, 1));
+                @endphp
+                <article class="bg-white rounded-3xl border border-sage-100 p-5 sm:p-6 shadow-xs space-y-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-10 h-10 rounded-full bg-sage-100 text-sage-700 font-bold text-sm flex items-center justify-center flex-shrink-0">
+                                {{ $reviewerInitial }}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="font-bold text-sm text-stone-900">{{ $reviewerName }}</span>
+                                    @if($review->has_purchased)
+                                        <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                            ✓ Đã Mua
+                                        </span>
+                                    @endif
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <div class="flex items-center gap-0.5">
+                                        @for($i = 1; $i <= 5; $i++)
+                                            <svg class="w-3.5 h-3.5 {{ $i <= $review->rating ? 'text-amber-400' : 'text-stone-200' }}" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                            </svg>
+                                        @endfor
+                                    </div>
+                                    <span class="text-xs text-stone-400">• {{ $review->created_at?->format('d/m/Y H:i') }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if(auth()->check() && (auth()->id() === $review->user_id || auth()->user()->is_admin))
+                            <form action="{{ route('products.reviews.destroy', [$product->slug, $review->id]) }}" method="POST"
+                                  data-confirm="true"
+                                  data-confirm-type="danger"
+                                  data-confirm-title="Xác nhận xóa bình luận"
+                                  data-confirm-message="Bạn có chắc chắn muốn xóa bình luận này không?"
+                                  data-confirm-detail="Bình luận sau khi xóa sẽ không thể khôi phục."
+                                  data-confirm-btn="Xóa bình luận">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-xs font-semibold text-red-500 hover:bg-red-50 border border-red-200 px-3 py-1 rounded-full transition cursor-pointer">
+                                    Xóa
+                                </button>
+                            </form>
+                        @endif
+                    </div>
+
+                    <p class="text-sm text-stone-700 leading-relaxed whitespace-pre-line pl-0 sm:pl-[52px]">{{ $review->comment }}</p>
+                </article>
+            @empty
+                <div class="bg-white rounded-3xl border border-sage-100 p-8 text-center text-sm text-stone-400">
+                    Chưa có bình luận nào cho sản phẩm này. Hãy là người đầu tiên chia sẻ cảm nhận!
+                </div>
+            @endforelse
+        </div>
+    </section>
+
+    <script>
+        (function () {
+            const ratingInput = document.getElementById('review-rating-input');
+            const picker = document.getElementById('review-star-picker');
+            const labelEl = document.getElementById('review-rating-label');
+            if (!ratingInput || !picker) return;
+
+            const LABELS = {
+                1: '1 sao • Rất tệ',
+                2: '2 sao • Chưa hài lòng',
+                3: '3 sao • Bình thường',
+                4: '4 sao • Hài lòng',
+                5: '5 sao • Tuyệt vời'
+            };
+
+            const buttons = Array.from(picker.querySelectorAll('.review-star-btn'));
+
+            function renderStars(activeStar) {
+                buttons.forEach((btn) => {
+                    const star = Number(btn.dataset.star);
+                    const svg = btn.querySelector('svg');
+                    if (!svg) return;
+                    svg.classList.toggle('text-amber-400', star <= activeStar);
+                    svg.classList.toggle('text-stone-200', star > activeStar);
+                });
+                if (labelEl) {
+                    labelEl.textContent = LABELS[activeStar] || LABELS[5];
+                }
+            }
+
+            buttons.forEach((btn) => {
+                const star = Number(btn.dataset.star);
+                btn.addEventListener('mouseenter', () => renderStars(star));
+                btn.addEventListener('click', () => {
+                    ratingInput.value = String(star);
+                    renderStars(star);
+                });
+            });
+
+            picker.addEventListener('mouseleave', () => {
+                renderStars(Number(ratingInput.value || 5));
+            });
+
+            renderStars(Number(ratingInput.value || 5));
+        })();
+    </script>
+
     <!-- Related Products -->
     @if($relatedProducts->isNotEmpty())
         <section class="pt-8 sm:pt-10 border-t border-sage-100 space-y-6">

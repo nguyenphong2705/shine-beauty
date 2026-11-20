@@ -9,12 +9,14 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\PaymentTransaction;
 use App\Models\Product;
+use App\Models\ProductReview;
 use App\Models\User;
 use App\Services\PaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -119,6 +121,25 @@ class AdminController extends Controller
     public function payments(Request $request)
     {
         return $this->renderAdminPage($request, 'payments');
+    }
+
+    public function reviews(Request $request)
+    {
+        return $this->renderAdminPage($request, 'reviews');
+    }
+
+    /**
+     * Xóa bình luận sản phẩm từ trang quản trị.
+     */
+    public function destroyReview(ProductReview $review): RedirectResponse
+    {
+        if ($redirect = $this->authorizeShopOwner()) {
+            return $redirect;
+        }
+
+        $review->delete();
+
+        return back()->with('success', 'Đã xóa bình luận khỏi hệ thống.');
     }
 
     /**
@@ -329,6 +350,36 @@ class AdminController extends Controller
             'category_chart' => $categoryDistribution,
         ];
 
+        $allReviews = ProductReview::with(['user:id,name,email,phone', 'product:id,name,slug,sku,images'])
+            ->latest()
+            ->get();
+
+        $reviewSearch = trim((string) $request->query('review_search', ''));
+        $reviewRating = (string) $request->query('review_rating', 'ALL');
+        $reviewVerified = (string) $request->query('review_verified', 'ALL');
+
+        $reviews = $allReviews->filter(function (ProductReview $rev) use ($reviewSearch, $reviewRating, $reviewVerified) {
+            if ($reviewRating !== 'ALL' && (int) $rev->rating !== (int) $reviewRating) {
+                return false;
+            }
+            if ($reviewVerified === 'VERIFIED' && !$rev->is_verified_purchase) {
+                return false;
+            }
+            if ($reviewVerified === 'UNVERIFIED' && $rev->is_verified_purchase) {
+                return false;
+            }
+            if ($reviewSearch !== '') {
+                $kw = mb_strtolower($reviewSearch);
+                $userName = mb_strtolower($rev->user->name ?? '');
+                $productName = mb_strtolower($rev->product->name ?? '');
+                $comment = mb_strtolower($rev->comment ?? '');
+                return str_contains($userName, $kw)
+                    || str_contains($productName, $kw)
+                    || str_contains($comment, $kw);
+            }
+            return true;
+        })->values();
+
         return view('admin.index', compact(
             'activePage',
             'allOrders',
@@ -351,6 +402,11 @@ class AdminController extends Controller
             'categoryFilter',
             'paymentTransactions',
             'unpaidQrOrders',
+            'allReviews',
+            'reviews',
+            'reviewSearch',
+            'reviewRating',
+            'reviewVerified',
             'stats'
         ));
     }
@@ -438,6 +494,7 @@ class AdminController extends Controller
                 'volume' => $p->volume,
                 'skin_type' => $p->skin_type,
                 'is_best_seller' => $p->is_best_seller,
+                'is_active' => (bool) $p->is_active,
                 'sold_quantity' => $p->sold_quantity ?? 0,
                 'image' => $p->first_image,
                 'category_id' => $p->category_id,
@@ -717,8 +774,42 @@ class AdminController extends Controller
         }
 
         $product->update(['is_best_seller' => !$product->is_best_seller]);
+        $this->clearStorefrontProductCache();
 
         return back()->with('success', "Đã cập nhật trạng thái Bán chạy (Best Seller) cho \"{$product->name}\"!");
+    }
+
+    /**
+     * Bật / tắt trạng thái ẩn / hiện sản phẩm trên trang chủ và cửa hàng.
+     *
+     * @param Product $product Thực thể sản phẩm cần cập nhật
+     * @return RedirectResponse
+     */
+    public function toggleProductVisibility(Product $product): RedirectResponse
+    {
+        if ($redirect = $this->authorizeShopOwner()) {
+            return $redirect;
+        }
+
+        $nextState = !$product->is_active;
+        $product->update(['is_active' => $nextState]);
+        $this->clearStorefrontProductCache();
+
+        $statusLabel = $nextState ? 'Đang hiển thị' : 'Đang ẩn';
+
+        return back()->with('success', "Đã chuyển sản phẩm \"{$product->name}\" sang trạng thái {$statusLabel}!");
+    }
+
+    /**
+     * Xóa cache danh sách sản phẩm trên trang chủ và blog để thay đổi hiển thị ngay lập tức.
+     */
+    private function clearStorefrontProductCache(): void
+    {
+        Cache::forget('home.total_products_count');
+        Cache::forget('home.best_sellers.v1');
+        Cache::forget('home.categories.v1');
+        Cache::forget('home.brands.v1');
+        Cache::forget('blog.recommended_products.v1');
     }
 
     /**
@@ -736,6 +827,7 @@ class AdminController extends Controller
         $name = $product->name;
         $this->deleteLocalProductImages($product->images);
         $product->delete();
+        $this->clearStorefrontProductCache();
 
         return back()->with('success', "Đã xóa sản phẩm \"{$name}\" khỏi hệ thống.");
     }
